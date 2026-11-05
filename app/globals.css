@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* The mockups' colours. Each one is a CSS variable and a Tailwind colour (bg-accent, text-wish-ink…).
+   `static` emits every variable even before a class uses it, so var(--color-accent) always works. */
+@theme static {
+  --color-accent: #b8452f; /* buttons */
+  --color-wish: #eaf1fb; /* the wish-list tile */
+  --color-wish-ink: #1f4f8f;
+  --color-buying: #fbe9e4; /* the buying tile */
+  --color-buying-ink: #8a2f1d;
+  --color-family: #2f5a24; /* family headings */
+}

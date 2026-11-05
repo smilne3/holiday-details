@@ -1,0 +1,42 @@
+# Without grouping, Dependabot opens one PR per package. Grouping makes one weekly PR per
+# ecosystem, which is reviewable. The security group stays separate so a real advisory is never
+# queued behind a routine bump.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Majors arrive unsolicited otherwise. Leaving them out of the routine group below only
+    # controls GROUPING: Dependabot would still open a PR per major. A major is a migration to
+    # schedule, not a bump to review.
+    #
+    # The cost: ignore conditions apply to security updates too, so if the only fix for an
+    # advisory were a major, no PR would open. The Dependabot ALERT still fires and stays in the
+    # Security tab, so nothing goes unreported. It just has to be actioned deliberately.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    groups:
+      # Anything with an advisory behind it, on its own, so it can be merged on its own.
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+      # Everything else in one PR. Majors excluded: this repo runs Next 16, where a major is a
+      # migration with its own guide, not a version bump.
+      routine:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+  # The workflow pins each action by commit, with the version as a trailing comment
+  # (`uses: actions/checkout@<commit> # v7.0.1`). Dependabot updates the commit and the comment
+  # together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
