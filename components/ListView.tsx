@@ -5,9 +5,9 @@ import { useState } from 'react'
 import { ItemClaim } from '@/components/ItemClaim'
 import { ItemForm } from '@/components/ItemForm'
 import { RemoveItem } from '@/components/RemoveItem'
+import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
-import { shopName } from '@/lib/format'
 import type { ClaimResult, ListItem, ListViewData, Result } from '@/lib/types'
 
 // The Server Actions in app/list/actions.ts. Tests pass fakes.
@@ -108,22 +108,7 @@ export function ListView({
                           {item.details}
                         </p>
                       )}
-                      {/* Only a stored link is ever a link, and the database holds only http(s) ones.
-                          The words sit in one span: as a flex item of its own, the arrow's span
-                          would drop its leading space. */}
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center text-sm text-link"
-                        >
-                          <span>
-                            {shopName(item.url)}
-                            <span aria-hidden="true">{' ↗'}</span>
-                          </span>
-                        </a>
-                      )}
+                      {item.url && <ShopLink url={item.url} />}
                     </>
                   )}
                 </div>
