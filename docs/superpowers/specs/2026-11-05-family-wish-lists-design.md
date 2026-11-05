@@ -88,15 +88,29 @@ the playback.)*
   long-lived cookie (lasting into January), and every other page uses that cookie. This means a page
   copied out of the address bar, such as Leo's list pasted into the family email thread, can't sign
   anyone in as the person who copied it. A bookmark of an inner page works in the same browser; on a
-  browser without the cookie it shows the "ask the organizer for your link" page. *(My call.)*
+  browser without the cookie it shows the "open your link" page below. *(My call.)*
+- **Moving between devices works.** Someone who started on their phone opens their personal link once
+  on the computer, from the original email or a synced bookmark of the home page, and that browser
+  remembers them from then on.
 - **Every page says who you're signed in as** ("Signed in as Maya"), so a wrong identity is obvious.
   The owner confirmed no adults share a device or an email address, so this line is enough, and
   there's no "Who's this?" check.
 - **Links work all season.** They must not expire before January.
 - **Anyone holding a personal link is that person.** That's an accepted risk inside one family. The organizer
   can replace a person's link if one leaks; the old link then stops working. *(My call.)*
-- **Visiting without a valid link** shows one plain sentence: ask the organizer for your link. There's
-  no sign-up.
+- **"Tap the link in your email" is the one thing anyone has to remember.** It works on every phone,
+  computer and browser, every time, including the browser some email apps open links in. Nobody needs
+  to know which browser they're using. The owner pointed out some relatives won't know whether they're
+  in Safari or Chrome, so nothing in the app may depend on them knowing. *(Owner's point; the wording
+  below is my call.)*
+- **Visiting without a valid link** shows a plain, friendly page that never mentions browsers, devices
+  or cookies: "To see the family's lists, tap the link in the email [organizer's name] sent you." Only
+  after that, in smaller type: "Can't find the email? Ask [organizer's name]." The first instruction
+  must not be "ask the organizer", or every new device turns into an email to the owner. There's no
+  sign-up.
+- **The invitation email** says: keep this email, and tap this link whenever you want to see the
+  lists. Bookmarking is mentioned as optional, not as a step. For the least tech-comfortable people,
+  the email is the bookmark. The organizer page offers that wording ready to copy.
 
 ## Screens (the owner chose these from mockups)
 
