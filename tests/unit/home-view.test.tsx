@@ -19,8 +19,8 @@ const home: HomeData = {
       name: 'Ben & Maya',
       members: [
         { id: ben.id, name: 'Ben', kind: 'adult' },
-        { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo', kind: 'kid' },
         { id: '00000000-0000-4000-8000-0000000000a4', name: 'Ivy', kind: 'kid' },
+        { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo', kind: 'kid' },
       ],
     },
     {
@@ -35,8 +35,8 @@ const home: HomeData = {
       id: '00000000-0000-4000-8000-0000000000b2',
       name: 'Sam & Priya',
       members: [
-        { id: '00000000-0000-4000-8000-0000000000a5', name: 'Sam', kind: 'adult' },
         { id: '00000000-0000-4000-8000-0000000000a6', name: 'Priya', kind: 'adult' },
+        { id: '00000000-0000-4000-8000-0000000000a5', name: 'Sam', kind: 'adult' },
         { id: '00000000-0000-4000-8000-0000000000a7', name: 'Ollie', kind: 'kid' },
       ],
     },

@@ -6,7 +6,8 @@ import type { HomeData } from '@/lib/types'
 // The home screen the owner chose (mockup B, with the computer's small buttons along the top): two
 // buttons for the viewer's own things, then everyone else, one card per household. Nothing collapses
 // or waits behind a tap. On a phone the two buttons share the row; from md: up they keep a button's
-// width instead of stretching, and the cards sit side by side.
+// width instead of stretching, and the cards sit side by side. The two emoji are the mockup's
+// decoration, hidden from screen readers like the row chevrons; the words all come from copy.
 export function HomeView({
   viewer,
   home,
@@ -24,7 +25,9 @@ export function HomeView({
           href={`/list/${viewer.id}`}
           className="min-h-11 flex-1 rounded-2xl bg-wish px-3 py-3 font-bold text-wish-ink md:w-56 md:flex-none md:px-4 md:text-lg"
         >
-          <span aria-hidden="true">📝 </span>
+          <span aria-hidden="true" className="mr-1.5">
+            📝
+          </span>
           {copy.myWishList}
           <span className="mt-1 block text-sm font-normal opacity-80">{copy.things(home.myItemCount)}</span>
         </Link>
@@ -32,7 +35,9 @@ export function HomeView({
           href="/buying"
           className="min-h-11 flex-1 rounded-2xl bg-buying px-3 py-3 font-bold text-buying-ink md:w-56 md:flex-none md:px-4 md:text-lg"
         >
-          <span aria-hidden="true">🎁 </span>
+          <span aria-hidden="true" className="mr-1.5">
+            🎁
+          </span>
           {copy.giftsImBuying}
           <span className="mt-1 block text-sm font-normal opacity-80">{copy.gifts(home.buyingCount)}</span>
         </Link>
