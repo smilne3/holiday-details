@@ -296,6 +296,18 @@ it('addItem trims, stores blanks as null, adds https:// to a bare link, keeps em
   ])
 })
 
+// Postgres answers a NUL in text with an error. No one types one, but a forged request can send it.
+it('a NUL character is dropped, so the save is not an error', async () => {
+  const withNuls = { name: 'Ki\u0000te', details: 'Red\u0000', link: 'example.com/\u0000k' }
+  expect(await addItem(db, f.maya, f.leo.id, withNuls)).toEqual(ok)
+  const kite = await idOf(f.leo.id, 'Kite')
+  expect(await row(kite)).toMatchObject({ name: 'Kite', details: 'Red', url: 'https://example.com/k' })
+
+  const onlyNuls = { name: '\u0000Box kite', details: '\u0000', link: '\u0000' }
+  expect(await updateItem(db, f.maya, kite, onlyNuls)).toEqual(ok)
+  expect(await row(kite)).toMatchObject({ name: 'Box kite', details: null, url: null })
+})
+
 it('updateItem: the owner saves, and updated_at moves forward', async () => {
   const feeder = await itemRow(db, f.maya.id, 'Bird feeder')
   await backdate(feeder)

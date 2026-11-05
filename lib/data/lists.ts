@@ -163,13 +163,19 @@ async function adultsIn(db: Db, householdId: string): Promise<string[]> {
 function checkInput(
   input: ItemInput,
 ): { ok: true; name: string; details: string | null; url: string | null } | { ok: false; error: string } {
-  const name = input.name.trim()
-  const details = input.details.trim()
+  const name = withoutNul(input.name).trim()
+  const details = withoutNul(input.details).trim()
   if (name === '') return refused(copy.nameRequired)
   if (chars(name) > MAX_NAME || chars(details) > MAX_DETAILS) return refused(copy.tooLong)
-  const link = normalizeLink(input.link)
+  const link = normalizeLink(withoutNul(input.link))
   if (!link.ok) return refused(copy.badLink)
   return { ok: true, name, details: details === '' ? null : details, url: link.url }
+}
+
+// Postgres answers a NUL in text with an error, and none belongs in a name, details or a link.
+// No one types one, but a forged request can send it.
+function withoutNul(s: string): string {
+  return s.replaceAll('\u0000', '')
 }
 
 // Length as Postgres counts it, in characters: an emoji is one, where JavaScript's length says two.
