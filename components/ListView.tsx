@@ -108,7 +108,9 @@ export function ListView({
                           {item.details}
                         </p>
                       )}
-                      {/* Only a stored link is ever a link, and the database holds only http(s) ones. */}
+                      {/* Only a stored link is ever a link, and the database holds only http(s) ones.
+                          The words sit in one span: as a flex item of its own, the arrow's span
+                          would drop its leading space. */}
                       {item.url && (
                         <a
                           href={item.url}
@@ -116,8 +118,10 @@ export function ListView({
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center text-sm text-link"
                         >
-                          {shopName(item.url)}
-                          <span aria-hidden="true">{' ↗'}</span>
+                          <span>
+                            {shopName(item.url)}
+                            <span aria-hidden="true">{' ↗'}</span>
+                          </span>
                         </a>
                       )}
                     </>
@@ -127,7 +131,7 @@ export function ListView({
                 {!own && <div className="md:col-start-2 md:row-span-2 md:row-start-1">{claimArea(item)}</div>}
 
                 {view.canEdit && editing !== item.id && (
-                  <div className="flex flex-wrap items-center gap-x-3 md:col-start-1 md:row-start-2">
+                  <div className="-ml-1 flex flex-wrap items-center gap-x-3 md:col-start-1 md:row-start-2">
                     <button
                       type="button"
                       onClick={() => setEditing(item.id)}
