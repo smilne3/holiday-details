@@ -53,3 +53,22 @@ export interface ListViewData {
   canClaim: boolean
   items: ListItem[]
 }
+
+// What "I'll buy this" answers. 'claimed' means the viewer holds the item now, including when they
+// already did; 'taken' means someone else holds it; 'gone' means it was removed from the list, or
+// never existed; 'not-allowed' is the viewer's own item, whether or not anyone has claimed it, so
+// the answer can't give a claim away.
+export type ClaimResult = 'claimed' | 'taken' | 'gone' | 'not-allowed'
+
+// One person's gifts in the viewer's Gifts I'm buying. note says what the owner did after the
+// claim: took the item off the list, or edited it. A removed item stays until the buyer undoes it.
+export interface BuyingGroup {
+  recipient: { id: string; name: string }
+  items: {
+    id: string
+    name: string
+    details: string | null
+    url: string | null
+    note: 'removed' | 'changed' | null
+  }[]
+}

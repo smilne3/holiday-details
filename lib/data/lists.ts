@@ -102,8 +102,9 @@ async function findPerson(db: Db, id: string): Promise<Person | null> {
   return row ? toPerson(row) : null
 }
 
-// An item's owner as stored, and whether it's been removed.
-async function findItem(db: Db, itemId: string): Promise<{ owner: Person; removed: boolean } | null> {
+// An item's owner as stored, and whether it's been removed. It never reads claims, so a check
+// that refuses an owner (lib/data/claims.ts) is settled without touching one.
+export async function findItem(db: Db, itemId: string): Promise<{ owner: Person; removed: boolean } | null> {
   if (!isUuid(itemId)) return null
   const [row] = await db.query<PersonRow & { removed: boolean }>(
     `select p.id, p.name, p.kind, p.household_id, i.removed_at is not null as removed
