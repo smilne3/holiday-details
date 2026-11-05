@@ -20,6 +20,7 @@ export const copy = {
   listTitle: (name: string) => `${possessive(name)} wish list`,
   keptByLine: (names: string[]) => `Kept by ${keptBy(names)}`,
   ownListNote: "You won't see what's been claimed on your own list. That's the surprise.",
+  listEmpty: 'Nothing on this list yet.',
 
   illBuyThis: "I'll buy this",
   saving: 'Saving…',

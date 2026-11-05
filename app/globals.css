@@ -13,4 +13,10 @@
   --color-row-line: #eee5d6; /* between the names in a card */
   --color-kid: #eef3ea; /* the "kid" label */
   --color-kid-ink: #3d6b2f;
+  --color-link: #2a62b8; /* links, and buttons that read as links */
+  --color-item-line: #e4ddd0; /* an item's border on a wish list */
+  --color-mine: #eef6ea; /* an item the viewer is buying */
+  --color-mine-line: #b9d6ab;
+  --color-mine-ink: #2f6b22;
+  --color-taken: #f3f1ec; /* an item someone else is buying */
 }
