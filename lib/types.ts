@@ -22,6 +22,17 @@ export interface HomeData {
   households: { id: string; name: string; members: { id: string; name: string; kind: PersonKind }[] }[]
 }
 
+// The organizer page: every household, empty ones included, and everyone in it, adults first and
+// then kids, each by name. token is the adult's personal link; kids have none. Only the organizer
+// is ever handed this.
+export interface OrganizerData {
+  households: {
+    id: string
+    name: string
+    people: { id: string; name: string; kind: PersonKind; token: string | null }[]
+  }[]
+}
+
 // What a write answers: done, or the message to show.
 export type Result = { ok: true } | { ok: false; error: string }
 

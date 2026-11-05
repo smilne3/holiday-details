@@ -71,4 +71,19 @@ export const copy = {
   cantDelete: "Can't remove someone who has a wish list or is buying gifts.",
   invitation: (name: string, link: string) =>
     `Hi ${name}!\n\nThis year our wish lists are all in one place. Tap this link to see everyone's lists and add your own:\n\n${link}\n\nKeep this email. Whenever you want to see the lists, just tap the link again. You can bookmark the page too if you like.\n\nThis link is just for you, so please don't forward it.`,
+
+  // The rest of the organizer page.
+  addHousehold: 'Add a household',
+  addAdult: 'Add an adult',
+  addKid: 'Add a kid',
+  rename: 'Rename',
+  fieldHouseholdName: 'Household name',
+  fieldNewPerson: "New person's name",
+  fieldPersonName: 'Name',
+  fieldHousehold: 'Household',
+  householdEmpty: 'No one in this household yet.',
+  you: 'you',
+  removePerson: (n: string) => `Remove ${n}?`,
+  linkReplaced: 'Done. The old link no longer works, so send them the new one.',
+  copyByHand: "That didn't copy. Select it here and copy it yourself:",
 } as const
