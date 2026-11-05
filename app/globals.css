@@ -9,4 +9,8 @@
   --color-buying: #fbe9e4; /* the buying tile */
   --color-buying-ink: #8a2f1d;
   --color-family: #2f5a24; /* family headings */
+  --color-card-line: #e0d6c4; /* a household card's border */
+  --color-row-line: #eee5d6; /* between the names in a card */
+  --color-kid: #eef3ea; /* the "kid" label */
+  --color-kid-ink: #3d6b2f;
 }

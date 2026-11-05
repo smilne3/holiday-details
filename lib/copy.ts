@@ -15,6 +15,7 @@ export const copy = {
   gifts: (n: number) => `${n} ${n === 1 ? 'gift' : 'gifts'}`,
   organizerPage: 'Organizer page',
   allLists: '‹ All lists',
+  loading: 'Loading…',
 
   listTitle: (name: string) => `${possessive(name)} wish list`,
   keptByLine: (names: string[]) => `Kept by ${keptBy(names)}`,

@@ -30,3 +30,8 @@ it('has no NEXT_PUBLIC_ env vars anywhere in the app', () => {
 it('lays out with md: or wider, never sm:', () => {
   expect(filesUnder(['app', 'components']).filter(f => /\bsm:/.test(read(f)))).toEqual([])
 })
+// Every page sits under app/loading.tsx. In the budgeting app, a #fragment link under a loading
+// placeholder left that placeholder on screen when the page behind it failed to load.
+it('links to no #fragment under app/loading.tsx', () => {
+  expect(filesUnder(['app', 'components']).filter(f => /href=\{?\s*["'`][^"'`]*#/.test(read(f)))).toEqual([])
+})
