@@ -7,8 +7,6 @@ import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import type { BuyingGroup } from '@/lib/types'
 
-type BuyingItem = BuyingGroup['items'][number]
-
 // Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
 // it's for, with the link and Undo. getBuying hands over the viewer's own claims and no one else's.
 //
@@ -76,7 +74,7 @@ export function BuyingView({
                     </p>
                     {item.note && (
                       <p className="mt-1 w-fit rounded-md bg-buying px-2 py-0.5 text-sm font-semibold text-buying-ink">
-                        {noteText(item, recipient.name)}
+                        {item.note === 'removed' ? copy.removedFrom(recipient.name) : copy.changedAfterClaim}
                       </p>
                     )}
                     {item.details && <p className="mt-0.5 text-sm text-neutral-600">{item.details}</p>}
@@ -91,12 +89,6 @@ export function BuyingView({
       )}
     </main>
   )
-}
-
-function noteText(item: BuyingItem, recipientName: string): string | null {
-  if (item.note === 'removed') return copy.removedFrom(recipientName)
-  if (item.note === 'changed') return copy.changedAfterClaim
-  return null
 }
 
 // Undo, as on a wish list: one call per tap, even two taps that land before the button redraws as

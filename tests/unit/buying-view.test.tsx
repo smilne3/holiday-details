@@ -152,7 +152,7 @@ it('empty shows the empty message', () => {
   expect(screen.queryByRole('button')).toBeNull()
 })
 
-it("shows Signed in as Maya and ‹ All lists", () => {
+it('shows Signed in as Maya and ‹ All lists', () => {
   show(grandmas, 'Maya')
   screen.getByRole('heading', { level: 1, name: copy.giftsImBuying })
   screen.getByText(copy.signedInAs('Maya'))
