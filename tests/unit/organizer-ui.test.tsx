@@ -126,6 +126,18 @@ it('Replace link asks copy.replaceConfirm with Yes and No before calling the act
   expect(screen.queryByText(copy.replaceConfirm)).toBeNull()
 })
 
+it('two taps on Yes that land before the row redraws still replace the link once', async () => {
+  const { actions, answer } = row(ben)
+  fireEvent.click(button(copy.replaceLink))
+  const yes = button(copy.yes)
+  act(() => {
+    yes.click()
+    yes.click()
+  })
+  expect(actions.replaceLink).toHaveBeenCalledOnce()
+  await answer({ ok: true })
+})
+
 it("a refused Replace link says why, and doesn't claim it worked", async () => {
   const { answer } = row(ben)
   fireEvent.click(button(copy.replaceLink))
@@ -143,6 +155,17 @@ it("Copy link writes window.location.origin + '/p/' + token to navigator.clipboa
   expect(writeText).toHaveBeenCalledOnce()
   expect(writeText).toHaveBeenCalledWith(benLink())
   expect(benLink()).toMatch(/^http:\/\/[^/]+\/p\/a{64}$/)
+  screen.getByText(copy.copied)
+})
+
+it("doesn't say Copied until the clipboard has it", async () => {
+  const written = Promise.withResolvers<void>()
+  writeText.mockImplementation(() => written.promise)
+  row(ben)
+  await act(async () => fireEvent.click(button(copy.copyLink)))
+  expect(writeText).toHaveBeenCalledOnce()
+  expect(screen.queryByText(copy.copied)).toBeNull()
+  await act(async () => written.resolve())
   screen.getByText(copy.copied)
 })
 

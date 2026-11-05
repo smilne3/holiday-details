@@ -50,7 +50,7 @@ export function CopyButton({ label, text }: { label: string; text: () => string 
         </span>
       </span>
       {byHand !== null && (
-        <div className="basis-full py-1">
+        <div className="basis-full px-1 py-1">
           <label htmlFor={id} className="block text-sm font-medium text-neutral-700">
             {copy.copyByHand}
           </label>
