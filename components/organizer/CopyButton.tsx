@@ -10,7 +10,7 @@ import { useHydrated } from '@/lib/use-hydrated'
 //
 // It says Copied only once the clipboard has taken it. When there's no clipboard (an address that
 // isn't https) or it refuses, the whole text shows in a read-only field, selected, to copy by hand,
-// so a tap never does nothing. Until the page's JavaScript runs it's disabled, since then it would.
+// so a tap never does nothing. That's also why it's disabled until the page's JavaScript runs.
 export function CopyButton({ label, text }: { label: string; text: () => string }) {
   const [status, setStatus] = useState<{ copied: true } | { byHand: string } | null>(null)
   const field = useRef<HTMLInputElement & HTMLTextAreaElement>(null)

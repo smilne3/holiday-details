@@ -103,8 +103,8 @@ export function BuyingView({
 // Undo, as on a wish list: one call per tap, even two taps that land before the button redraws as
 // disabled; Saving… while it saves; and a failure that says so and leaves the gift where it is,
 // since the claim is still there. When the page is on its way out (lib/stale-page.ts) it says
-// nothing and stays as Saving… until the page goes. It's disabled until the page's JavaScript runs. The button is described by the item's name,
-// so a screen reader says which gift each Undo is for.
+// nothing and stays as Saving… until the page goes. It's disabled until the page's JavaScript runs.
+// The button is described by the item's name, so a screen reader says which gift each Undo is for.
 //
 // The outer element stays put whatever the state, so screen readers announce each change in it.
 function Undo({

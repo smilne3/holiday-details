@@ -63,12 +63,12 @@ export function ListView({
   const rows: (OwnListItem | ListItem | { goneId: string })[] = view.items.filter(item => item.id !== gone?.id)
   if (gone) rows.splice(Math.min(gone.at, rows.length), 0, { goneId: gone.id })
 
-  function update(itemId: string, at: number) {
+  function update(itemId: string) {
     return async (prev: Result | null, form: FormData): Promise<Result> => {
       const result = await actions.update(itemId, prev, form)
       if (!result.ok && result.gone) {
         setEditing(null)
-        setGone({ id: itemId, at })
+        setGone({ id: itemId, at: view.items.findIndex(item => item.id === itemId) })
       }
       return result
     }
@@ -115,7 +115,7 @@ export function ListView({
         <p className="mt-5 text-neutral-600">{copy.listEmpty}</p>
       ) : (
         <ul className="mt-4 space-y-2.5">
-          {rows.map((item, at) => {
+          {rows.map(item => {
             if ('goneId' in item) {
               return (
                 <li key={item.goneId} className="rounded-xl border border-item-line bg-taken px-3.5 py-3">
@@ -136,7 +136,7 @@ export function ListView({
                 <div className="min-w-0 md:col-start-1 md:row-start-1">
                   {editing === item.id ? (
                     <ItemForm
-                      action={update(item.id, at)}
+                      action={update(item.id)}
                       submitLabel={copy.save}
                       initial={{ name: item.name, details: item.details ?? '', link: item.url ?? '' }}
                       onSaved={() => setEditing(null)}
