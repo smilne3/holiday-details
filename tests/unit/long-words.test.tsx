@@ -15,7 +15,7 @@ afterEach(cleanup)
 // a household (80), and a link whose shop name is long. All made up.
 const item = `https://shop.example/p/${'x'.repeat(200)}`.slice(0, 200)
 const details = 'size-small-color-green-'.repeat(25).slice(0, 500)
-const person = 'Maximiliana'.repeat(6).slice(0, 60)
+const person = 'Grandma'.repeat(9).slice(0, 60)
 const household = 'TheGrandparentsHouse'.repeat(4).slice(0, 80)
 const url = `https://${'a'.repeat(60)}.${'b'.repeat(60)}.example/`
 const words = [item, details, person, household, 'a'.repeat(60)]
