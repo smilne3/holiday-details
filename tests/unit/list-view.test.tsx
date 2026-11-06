@@ -333,7 +333,9 @@ it('on a page loaded before a deploy, the add form keeps what was typed across t
   expect(typed()).toEqual(['', '', ''])
 })
 
-it('an edit on a page loaded before a deploy reloads it, and the edit is not kept (ruling R21)', async () => {
+// The reloaded page shows the item as it is now. An edit on a page left open across a deploy is
+// rare, so it isn't kept: at worst it's typed again.
+it('an edit on a page loaded before a deploy reloads it, and the edit is not kept', async () => {
   const reload = watchReload()
   const actions = fakeActions()
   actions.update.mockRejectedValueOnce(staleAction())

@@ -1,8 +1,8 @@
 import { unstable_isUnrecognizedActionError, unstable_rethrow } from 'next/navigation'
 
 // For the buttons and forms that call Server Actions: when a call fails, whether the page is on its
-// way out, so the control should show nothing of its own (no ✓, no "removed", no "try again") and
-// stay as Saving… until the page goes.
+// way out, so the control should show nothing of its own (no ✓, no "try again") and stay as
+// Saving… until the page goes.
 //
 //   - A page loaded before a deploy calls Server Actions the new build doesn't have, and every retry
 //     fails the same way until the page reloads. So it reloads now, in answer to this tap, and comes
@@ -14,7 +14,9 @@ import { unstable_isUnrecognizedActionError, unstable_rethrow } from 'next/navig
 //     time, so it's only recognised here.
 //
 // An add form passes a draft, and what was typed is saved for the reloaded page to put back. Edit
-// forms don't, and their edit is lost (ruling R21): the reloaded page shows the item as it is.
+// forms don't, and their edit is lost: the reloaded page shows the item as it is. An edit made on a
+// page left open across a deploy is rare, so keeping it isn't worth the code: at worst it's typed
+// again.
 //
 // Anything else is an ordinary failure, for the control to report.
 export function pageIsLeaving(error: unknown, draft?: Draft): boolean {

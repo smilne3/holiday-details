@@ -37,7 +37,9 @@ export async function seedDevFamily(db: Db): Promise<Family> {
   }
 }
 
-// Leo's list is the one in the mockups. Every adult also gets two things, so no list starts empty.
+// Leo's list is the one in the mockups. Everyone else gets two things, so no list starts empty and a
+// preview shows every kind of list with something on it. Ivy's and Ollie's come last, so adding them
+// moved no one else's ids.
 export async function seedDevItems(db: Db, f: Family): Promise<void> {
   const iid = fixedIds(3)
   const item = (owner: Person, name: string, extra?: { details?: string; url?: string }) =>
@@ -61,6 +63,10 @@ export async function seedDevItems(db: Db, f: Family): Promise<void> {
   await item(f.grandma, 'Reading lamp')
   await item(f.grandpa, 'Crossword book')
   await item(f.grandpa, 'Slippers', { details: 'Size 10' })
+  await item(f.ivy, 'Paint set', { details: 'Watercolours' })
+  await item(f.ivy, 'Sticker book')
+  await item(f.ollie, 'Rain boots', { details: 'Kids size 12' })
+  await item(f.ollie, 'Dinosaur book')
 }
 
 // Fixed ids, the same in every copy of the family. A Vercel preview can run several server

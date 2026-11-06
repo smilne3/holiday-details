@@ -22,7 +22,7 @@ export async function testDb(): Promise<{
   }
 }
 
-// Raw inserts, for tests that come before the data layer.
+// Raw inserts that skip lib/data's checks, for setting up a test's rows.
 export async function itemRow(
   db: Db,
   ownerId: string,

@@ -1,6 +1,6 @@
 # Family wish lists: design
 
-Date: 2026-11-05. Status: draft, waiting for the owner's approval.
+Date: 2026-11-05. Status: approved by the owner on 2026-11-05.
 
 All names and examples in this document are made up. The repo is public; see Constraints.
 
@@ -198,8 +198,8 @@ getting" as presents she'll receive.
 - **The owner wants to learn the operations side.** When a step happens in a dashboard (creating the
   Supabase project, setting Vercel environment variables, deploying), write it as numbered steps with
   the reason for each, then verify it together.
-- The repo's `.gitignore` is currently GitHub's Visual Studio template. Replace it with a Node/Next.js
-  one and keep the `.superpowers/` line.
+- The repo's `.gitignore` was GitHub's Visual Studio template. Done: it's now a Node/Next.js one that
+  keeps the `.superpowers/` line.
 
 ## Launch
 

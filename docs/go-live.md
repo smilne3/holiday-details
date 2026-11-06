@@ -174,8 +174,10 @@ it holds data, so check all three before creating anything.
 2. Add `/p/dev-grandma` to the end of the address. You're now Grandma. Open Leo's list and tap "I'll
    buy this" on something, which should turn green. Then open Gifts I'm buying.
 3. Change the end of the address to `/p/dev-maya`. You're now Maya, the organizer. Check that her own
-   list shows no claims, that Leo's list (her kid's) shows Grandma's claim, and that the Organizer
-   page opens.
+   list opens and shows **Edit** and **Remove**, that Leo's list (her kid's) shows Grandma's claim,
+   and that the Organizer page opens.
+   No one in the made-up family is buying anything on Maya's list, so it can't show a claim here
+   whatever the app does. Step 7.2 is the real check that your own list keeps the surprise.
 4. If you'll copy invitations from your phone, tap **Copy invitation** on Ben's row of the Organizer
    page. It should say **Copied**. Paste it into a new email draft to see it whole, then delete the
    draft.
@@ -187,7 +189,14 @@ it holds data, so check all three before creating anything.
 A preview keeps its made-up family in the memory of whichever server instance answers, and Vercel can
 run several. Every instance starts with the same family, so every list opens. But a claim or an item
 you add lives only in the instance that saved it. On another page, or after a reload, it can seem to
-vanish or come back. That's only the demo. Production keeps everything in one place, Supabase.
+vanish or come back. A tap on something added in another instance is refused, in one of these ways:
+
+- **I'll buy this** on an item added there says "This was just taken off the list."
+- **Edit** or **Remove** on an item added there says "You can't change this list."
+- A person added on the Organizer page there has a link that opens the page saying to tap the link
+  in the email, and a list that says "That list isn't here any more."
+
+These are the demo, not bugs. Production keeps everything in one place, Supabase.
 
 ## 5. Merge
 
@@ -308,8 +317,9 @@ For anyone else's leaked link, open the Organizer page and click **Replace link*
 ## If something's wrong
 
 - **"Something went wrong" on every production page.** The Supabase project may be paused (step 2.13),
-  or `DATABASE_URL` may be wrong. To fix the variable, open Settings → Environment Variables, edit
-  `DATABASE_URL`, and paste the finished URI again (step 2.12). Then open **Deployments**, and use
+  or `DATABASE_URL` may be wrong. To fix the variable, open **Settings** → **Environment Variables**
+  (in the **Environments** layout, **Settings** → **Environments** → the **Production** row, as in
+  step 3.5), edit `DATABASE_URL`, and paste the finished URI again (step 2.12). Then open **Deployments**, and use
   **Redeploy** on the newest Production deployment. A deployment only picks up a changed variable when
   it's built again.
 - **A preview shows "Something went wrong".** `DEMO_DATA` is missing from Preview (step 3.6), or the

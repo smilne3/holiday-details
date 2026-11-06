@@ -3,12 +3,13 @@ import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import type { HomeData } from '@/lib/types'
 
-// The home screen the owner chose (mockup B, with the computer's small buttons along the top): two
-// buttons for the viewer's own things, then everyone else, one card per household. Nothing collapses
-// or waits behind a tap. On a phone the two buttons share the row; from md: up they keep a button's
-// width instead of stretching, and the cards sit side by side. The two emoji are the mockup's
-// decoration, hidden from screen readers like the row chevrons; the words all come from copy. Names
-// are wrap-anywhere, so a long one with no spaces wraps instead of pushing the page sideways.
+// The home screen the owner chose (mockup B in the spec's Screens section, with the computer's small
+// buttons along the top): two buttons for the viewer's own things, then everyone else, one card per
+// household. Nothing collapses or waits behind a tap. On a phone the two buttons share the row; from
+// md: up they keep a button's width instead of stretching, and the cards sit side by side. The two
+// emoji are the mockup's decoration, hidden from screen readers like the row chevrons; the words all
+// come from copy. Names are wrap-anywhere, so a long one with no spaces wraps instead of pushing the
+// page sideways.
 export function HomeView({
   viewer,
   home,

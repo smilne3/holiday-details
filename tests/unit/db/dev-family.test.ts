@@ -37,8 +37,14 @@ describe('the made-up family', () => {
   it('gets the same ids in every separately seeded copy', async () => {
     const first = await ids(a)
     expect(first.people).toHaveLength(9)
-    expect(first.items).toHaveLength(16)
+    expect(first.items).toHaveLength(20)
     expect(await ids(b)).toEqual(first)
+  })
+
+  // A preview should show every kind of list with something on it, a kid's included.
+  it('starts no one with an empty list', async () => {
+    const empty = await a.query('select name from people p where not exists (select 1 from items where owner_id = p.id)')
+    expect(empty).toEqual([])
   })
 
   // Both copies above come from one loaded module, so ids random per server process would pass

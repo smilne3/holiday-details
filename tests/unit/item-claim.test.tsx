@@ -58,7 +58,8 @@ it("once the server says claimed, shows ✓ You're buying this, Added to Gifts I
   await act(async () => claimed.resolve('claimed'))
   screen.getByText(copy.youreBuying)
   screen.getByText(copy.addedToBuying)
-  // Undo is a control of its own (ruling R10), and the dot before it isn't read out.
+  // Undo is a button of its own. The dot before it is only a divider, so it isn't read out, and
+  // being no word, it doesn't come from copy.
   expect(screen.getByRole('button', { name: copy.undo }).textContent).toBe(copy.undo)
   expect(screen.getByText('·').getAttribute('aria-hidden')).toBe('true')
   expect(screen.queryByRole('button', { name: copy.illBuyThis })).toBeNull()

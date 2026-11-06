@@ -2,7 +2,8 @@
 
 One extended family's holiday wish lists, kept in one place, with each adult signing in from a
 personal link. Anyone can tap "I'll buy this" on someone else's list, and everyone except that list's
-owner sees it straight away, so nothing is bought twice and no surprise is spoiled.
+owner sees it the next time they open or refresh the list, so nothing is bought twice and no surprise
+is spoiled.
 
 ## Run it locally
 
@@ -50,7 +51,7 @@ CI runs all three, plus `npm run build`, on every pull request (`.github/workflo
 |---|---|---|
 | Postgres | `DATABASE_URL` is set | The real family, in Supabase, through its transaction pooler. Vercel sets it for Production only. |
 | Dev | No `DATABASE_URL`, and not a production build (`npm run dev`) | The made-up family in `.pglite/`, seeded once |
-| Demo | No `DATABASE_URL`, a production build, and `DEMO_DATA=1` | The made-up family in memory, seeded at each start. Vercel previews use this. |
+| Demo | No `DATABASE_URL`, a production build, and `DEMO_DATA=1` | The made-up family in memory, seeded at each start. Vercel previews use this. Each server instance keeps its own copy, so a change made in one isn't seen by another (see [`docs/go-live.md`](docs/go-live.md) section 4). |
 
 A production build with neither variable set fails on every page rather than guess. That way a
 production deployment that has lost `DATABASE_URL` fails loudly, instead of quietly showing the

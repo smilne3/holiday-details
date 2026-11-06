@@ -21,7 +21,7 @@ export interface ListActions {
   remove: (itemId: string) => Promise<Result>
 }
 
-// One wish list, as the owner chose from the mockups (b-computer-and-list.html):
+// One wish list, as the owner chose from the mockups (the spec's Screens section):
 //   - someone else's list: "I'll buy this" on each open item, and anyone else's claim greyed and
 //     struck through, reading "Priya is buying this"
 //   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind

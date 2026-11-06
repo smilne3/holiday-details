@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { copy } from '@/lib/copy'
 
-// A list that was never there, or a person the organizer has since removed. Next also shows this
-// for any address that matches no page. The link goes to /, which takes a signed-in viewer to their
-// home page.
+// A list that was never there, or a person the organizer has since removed. A signed-in viewer who
+// isn't the organizer gets this for /organizer too, as if there were no such page. Next also shows
+// it for any address that matches no page. The link goes to /, which takes a signed-in viewer to
+// their home page.
 export default function NotFound() {
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">

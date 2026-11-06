@@ -4,9 +4,10 @@ import type { Db } from './types'
 
 export type DbMode = 'postgres' | 'dev' | 'demo'
 
-// Production has DATABASE_URL and reads the real family from Supabase. Previews set DEMO_DATA=1
-// instead and show the made-up family, so real data never reaches a preview. Local dev keeps the
-// made-up family in .pglite.
+// DATABASE_URL wins whenever it's set: that's the real family, in Supabase. DEMO_DATA=1 matters only
+// when it's absent, in a production build (a Vercel preview), and shows the made-up family. So what
+// keeps real data out of previews is DATABASE_URL being set for Vercel's Production environment
+// only (docs/go-live.md step 3.5), not DEMO_DATA. Local dev keeps the made-up family in .pglite.
 export function chooseDbMode(env: Record<string, string | undefined>): DbMode {
   if (env.DATABASE_URL) return 'postgres'
   if (env.NODE_ENV !== 'production') return 'dev'
