@@ -3,6 +3,7 @@
 import {
   startTransition,
   useActionState,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -11,6 +12,7 @@ import {
   type ReactNode,
 } from 'react'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
 
 // The organizer page's forms: a name, any other fields passed as children (a person's household),
@@ -26,12 +28,15 @@ import type { Result } from '@/lib/types'
 //
 // As in ItemForm, it submits from onSubmit rather than <form action>, so a refused save keeps what
 // was typed; the fields clear only once the server says it saved. One save at a time: a second tap
-// or Enter while saving sends nothing, so a slow network can't add someone twice.
+// or Enter while saving sends nothing, so a slow network can't add someone twice. And as there,
+// when the page is on its way out (lib/stale-page.ts) it says nothing and stays as Saving…, and an
+// add form's draftKey keeps what was typed across a reload after a deploy.
 export function NameForm({
   action,
   label,
   initial,
   buttons,
+  draftKey,
   onSaved,
   onCancel,
   children,
@@ -40,6 +45,7 @@ export function NameForm({
   label: string
   initial?: string
   buttons: { label: string; name?: string; value?: string }[]
+  draftKey?: string
   onSaved?: () => void
   onCancel?: () => void
   children?: ReactNode
@@ -48,24 +54,34 @@ export function NameForm({
   const formRef = useRef<HTMLFormElement>(null)
   const busy = useRef(false)
   const [pressed, setPressed] = useState(0)
+  const [leaving, setLeaving] = useState(false)
+
+  useEffect(() => {
+    if (draftKey) restoreDraft(draftKey, formRef.current)
+  }, [draftKey])
 
   const [state, dispatch, pending] = useActionState(
-    async (prev: Result | null, form: FormData): Promise<Result> => {
+    async (prev: Result | null, form: FormData): Promise<Result | null> => {
       try {
         const result = await action(prev, form)
         if (result.ok) {
           formRef.current?.reset()
           onSaved?.()
         }
-        return result
-      } catch {
-        return { ok: false, error: copy.saveFailed }
-      } finally {
         busy.current = false
+        return result
+      } catch (e) {
+        if (pageIsLeaving(e, draftKey ? { key: draftKey, form: formRef.current } : undefined)) {
+          setLeaving(true) // and busy stays set: nothing more is sent from this page
+          return prev
+        }
+        busy.current = false
+        return { ok: false, error: copy.saveFailed }
       }
     },
     null,
   )
+  const saving = pending || leaving
 
   const several = buttons.length > 1
 
@@ -115,10 +131,10 @@ export function NameForm({
             name={b.name}
             value={b.value}
             data-index={i}
-            disabled={pending}
+            disabled={saving}
             className="min-h-11 flex-1 rounded-lg bg-accent px-5 font-semibold text-white disabled:opacity-70 md:flex-none"
           >
-            {pending && pressed === i ? copy.saving : b.label}
+            {saving && pressed === i ? copy.saving : b.label}
           </button>
         ))}
         {onCancel && (

@@ -1,7 +1,10 @@
 // @vitest-environment node
+import { isValidElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
+import { createHouseholdAction } from '@/app/organizer/actions'
 import OrganizerPage from '@/app/organizer/page'
+import { NameForm } from '@/components/organizer/NameForm'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
 import { testDb } from '@/tests/helpers/db'
@@ -61,4 +64,17 @@ it('Maya sees every household, Signed in as Maya, and ‹ All lists goes to her 
   expect(markup).toContain(html(copy.addKid))
   // Five adults' rows can have their link replaced; Maya's own can't.
   expect(markup.split(html(copy.replaceLink)).length - 1).toBe(5)
+})
+
+// The elements the page itself puts together, without rendering what's inside each component.
+function elements(node: ReactNode): { type: unknown; props: Record<string, unknown> }[] {
+  if (Array.isArray(node)) return node.flatMap(elements)
+  if (!isValidElement<{ children?: ReactNode }>(node)) return []
+  return [node as never, ...elements(node.props.children)]
+}
+
+it("Add a household keeps what was typed across a reload after a deploy, under the key 'add-household'", async () => {
+  cookie.token = 'dev-maya'
+  const form = elements(await OrganizerPage()).find(e => e.type === NameForm && e.props.action === createHouseholdAction)
+  expect(form?.props.draftKey).toBe('add-household')
 })

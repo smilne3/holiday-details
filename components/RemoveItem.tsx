@@ -2,11 +2,13 @@
 
 import { useRef, useState } from 'react'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
 
 // Remove, asked about first, right there on the item: "Remove this?  Yes, remove  Keep it". No
 // browser dialog. One call per tap, as with "I'll buy this". Once the server says it's gone, the
-// page's refresh takes the item, and this with it, off the list; until then it reads Saving….
+// page's refresh takes the item, and this with it, off the list; until then it reads Saving…. It
+// reads Saving… too while the page is on its way out (lib/stale-page.ts), and says nothing else.
 export function RemoveItem({ itemId, remove }: { itemId: string; remove: (itemId: string) => Promise<Result> }) {
   const [step, setStep] = useState<'idle' | 'asking' | 'removing'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +25,8 @@ export function RemoveItem({ itemId, remove }: { itemId: string; remove: (itemId
         setError(result.error)
         setStep('idle')
       }
-    } catch {
+    } catch (e) {
+      if (pageIsLeaving(e)) return
       setError(copy.saveFailed)
       setStep('idle')
     } finally {

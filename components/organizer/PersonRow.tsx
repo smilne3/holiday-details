@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react'
 import { CopyButton } from '@/components/organizer/CopyButton'
 import { NameForm } from '@/components/organizer/NameForm'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving } from '@/lib/stale-page'
 import type { OrganizerData, Result } from '@/lib/types'
 
 // The organizer page's Server Actions for one person (app/organizer/actions.ts). Tests pass fakes.
@@ -23,8 +24,9 @@ type Step = 'idle' | 'editing' | 'askReplace' | 'replacing' | 'askRemove' | 'rem
 // page, and the server refuses both anyway.
 //
 // Replace link and Remove ask first, right there in the row, with no browser dialog. One call per
-// tap, as with "I'll buy this". The Copy buttons are keyed by the link, so once it's replaced, a
-// Copied that was about the old one goes.
+// tap, as with "I'll buy this". When the page is on its way out (lib/stale-page.ts), they say
+// nothing and stay as Saving… until it goes. The Copy buttons are keyed by the link, so once it's
+// replaced, a Copied that was about the old one goes.
 export function PersonRow({
   person,
   householdId,
@@ -66,7 +68,8 @@ export function PersonRow({
         setStep('idle')
       }
       // Removed: the page's refresh takes this row away. Until then it reads Saving….
-    } catch {
+    } catch (e) {
+      if (pageIsLeaving(e)) return
       setMessage({ error: copy.saveFailed })
       setStep('idle')
     } finally {

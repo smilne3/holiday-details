@@ -138,6 +138,7 @@ export function ListView({
           <ItemForm
             action={actions.add.bind(null, view.owner.id)}
             submitLabel={own ? copy.addToMyList : copy.addToList(view.owner.name)}
+            draftKey={`add-item:${view.owner.id}`}
           />
         </section>
       )}

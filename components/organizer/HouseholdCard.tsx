@@ -78,6 +78,7 @@ export function HouseholdCard({
         <NameForm
           action={actions.addPerson.bind(null, household.id)}
           label={copy.fieldNewPerson}
+          draftKey={`add-person:${household.id}`}
           buttons={[
             { label: copy.addAdult, name: 'kind', value: 'adult' },
             { label: copy.addKid, name: 'kind', value: 'kid' },

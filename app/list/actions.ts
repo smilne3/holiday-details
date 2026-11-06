@@ -1,10 +1,9 @@
 'use server'
 
 import { refresh } from 'next/cache'
-import { copy } from '@/lib/copy'
+import { redirect } from 'next/navigation'
 import { claimItem, unclaimItem } from '@/lib/data/claims'
 import { addItem, removeItem, updateItem } from '@/lib/data/lists'
-import { getOrganizerName } from '@/lib/data/people'
 import { getDb } from '@/lib/db'
 import { getViewer } from '@/lib/session'
 import type { ClaimResult, ItemInput, Result } from '@/lib/types'
@@ -18,52 +17,49 @@ import type { ClaimResult, ItemInput, Result } from '@/lib/types'
 // made it is showing why, and a re-render could take that control off the page before it's read
 // (a claim someone else got first turns the item into "Priya is buying this", with no room for
 // "Someone just took this one.").
+//
+// Signed out (no cookie, or a link the organizer replaced), every action sends the browser to /,
+// which says to tap the link in the email. "Try again" couldn't work, and that page says what will.
+// redirect() throws, so nothing after it runs.
 
-// "I'll buy this". Signed out, it's 'not-allowed', which the button shows as a failed save.
+// "I'll buy this".
 export async function claimAction(itemId: string): Promise<ClaimResult> {
   const viewer = await getViewer()
-  if (!viewer) return 'not-allowed'
+  if (!viewer) redirect('/')
   const result = await claimItem(await getDb(), viewer, itemId)
   if (result === 'claimed') refresh()
   return result
 }
 
-// Undo. With no viewer there's nothing to answer with, so it throws: Undo then says the save
-// failed and keeps the ✓, rather than show the claim gone while it's still there.
+// Undo.
 export async function unclaimAction(itemId: string): Promise<void> {
   const viewer = await getViewer()
-  if (!viewer) throw new Error('Undo needs a signed-in viewer')
+  if (!viewer) redirect('/')
   await unclaimItem(await getDb(), viewer, itemId)
   refresh()
 }
 
 export async function addItemAction(ownerId: string, _prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await addItem(await getDb(), viewer, ownerId, itemInput(form)))
 }
 
 export async function updateItemAction(itemId: string, _prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await updateItem(await getDb(), viewer, itemId, itemInput(form)))
 }
 
 export async function removeItemAction(itemId: string): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await removeItem(await getDb(), viewer, itemId))
 }
 
 function refreshed(result: Result): Result {
   if (result.ok) refresh()
   return result
-}
-
-// A signed-out write gets the not-signed-in page's own words, which say what to do.
-async function signedOut(): Promise<Result> {
-  const organizer = await getOrganizerName(await getDb())
-  return { ok: false, error: copy.notSignedIn(organizer ?? copy.organizerFallback) }
 }
 
 // The form's three fields as text. lib/data trims them, so each must be a string: a forged request

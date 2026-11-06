@@ -3,10 +3,12 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ListView, type ListActions } from '@/components/ListView'
 import { copy } from '@/lib/copy'
 import type { ListItem, ListViewData } from '@/lib/types'
+import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  sessionStorage.clear()
 })
 
 // Leo's list from the mockup, and Maya's own list, as getListView returns them. The ids and links
@@ -236,4 +238,73 @@ it("a refused Remove says why, and the item's Remove button comes back", async (
 it('an empty list says so', () => {
   show({ ...leoOther, items: [] as ListItem[] }, 'Grandma')
   screen.getByText(copy.listEmpty)
+})
+
+const typed = () => [copy.fieldName, copy.fieldDetails, copy.fieldLink].map(l => (screen.getByLabelText(l) as HTMLInputElement).value)
+
+it('on a page loaded before a deploy, the add form keeps what was typed across the reload, under its owner', async () => {
+  const reload = watchReload()
+  const actions = fakeActions()
+  actions.add.mockRejectedValueOnce(staleAction())
+  show(leoKept, 'Maya', actions)
+  fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Kite' } })
+  fireEvent.change(screen.getByLabelText(copy.fieldDetails), { target: { value: 'Red' } })
+  fireEvent.change(screen.getByLabelText(copy.fieldLink), { target: { value: 'shop.example/kite' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.addToList('Leo') }))
+  await act(async () => {})
+  expect(reload).toHaveBeenCalledOnce()
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+
+  // The reloaded page puts it back, once.
+  cleanup()
+  show(leoKept, 'Maya')
+  expect(typed()).toEqual(['Kite', 'Red', 'shop.example/kite'])
+  cleanup()
+  show(leoKept, 'Maya')
+  expect(typed()).toEqual(['', '', ''])
+  // Another list's add form keeps nothing of Leo's.
+  cleanup()
+  show(mayaOwn, 'Maya')
+  expect(typed()).toEqual(['', '', ''])
+})
+
+it('an edit on a page loaded before a deploy reloads it, and the edit is not kept (ruling R21)', async () => {
+  const reload = watchReload()
+  const actions = fakeActions()
+  actions.update.mockRejectedValueOnce(staleAction())
+  show(mayaOwn, 'Maya', actions)
+  fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.edit }))
+  const card = screen.getByDisplayValue('Bird feeder').closest('li')!
+  fireEvent.change(within(card).getByLabelText(copy.fieldName), { target: { value: 'Two bird feeders' } })
+  fireEvent.click(within(card).getByRole('button', { name: copy.save }))
+  await act(async () => {})
+  expect(reload).toHaveBeenCalledOnce()
+  expect(sessionStorage.length).toBe(0)
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+})
+
+it('a Remove on a page loaded before a deploy reloads it, and the item stays until then', async () => {
+  const reload = watchReload()
+  const actions = fakeActions()
+  actions.remove.mockRejectedValueOnce(staleAction())
+  show(mayaOwn, 'Maya', actions)
+  fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.remove }))
+  fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.removeYes }))
+  await act(async () => {})
+  expect(reload).toHaveBeenCalledOnce()
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  expect(within(row('Bird feeder')).getByRole('button', { name: copy.saving })).toHaveProperty('disabled', true)
+})
+
+it('signed out, a Remove says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const actions = fakeActions()
+  actions.remove.mockRejectedValueOnce(redirectTo('/'))
+  show(mayaOwn, 'Maya', actions)
+  fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.remove }))
+  fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.removeYes }))
+  await act(async () => {})
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  within(row('Bird feeder')).getByRole('button', { name: copy.saving })
+  expect(reload).not.toHaveBeenCalled()
 })

@@ -3,11 +3,16 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ItemForm } from '@/components/ItemForm'
 import { copy } from '@/lib/copy'
 import type { Result } from '@/lib/types'
+import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+  sessionStorage.clear()
+})
 
 // A save the test answers when it chooses, the way a slow network would.
-function setup(props: { onSaved?: () => void; onCancel?: () => void } = {}) {
+function setup(props: { onSaved?: () => void; onCancel?: () => void; draftKey?: string } = {}) {
   const saved = Promise.withResolvers<Result>()
   const action = vi.fn<(prev: Result | null, form: FormData) => Promise<Result>>(() => saved.promise)
   render(<ItemForm action={action} submitLabel={copy.addToMyList} {...props} />)
@@ -114,4 +119,79 @@ it('editing starts from the item as it is, and Cancel leaves without saving', ()
   fireEvent.click(screen.getByRole('button', { name: copy.cancel }))
   expect(onCancel).toHaveBeenCalledOnce()
   expect(action).not.toHaveBeenCalled()
+})
+
+// The key an add form keeps its typing under. The id is made up.
+const draftKey = 'add-item:00000000-0000-4000-8000-0000000000a2'
+const values = () => [copy.fieldName, copy.fieldDetails, copy.fieldLink].map(l => field(l).value)
+
+it('on a page loaded before a deploy, an add saves what was typed, reloads, and says nothing else', async () => {
+  const reload = watchReload()
+  const { action, saved } = setup({ draftKey })
+  fill('Sweater', 'Green, size XS', 'asos.com/sweater')
+  submit()
+  await act(async () => saved.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  expect(JSON.parse(sessionStorage.getItem(draftKey)!)).toEqual({
+    name: 'Sweater',
+    details: 'Green, size XS',
+    link: 'asos.com/sweater',
+  })
+  expect(screen.queryByRole('alert')).toBeNull()
+  // Saving… until the page goes, and nothing more is sent.
+  const saving = screen.getByRole('button', { name: copy.saving })
+  expect(saving).toHaveProperty('disabled', true)
+  fireEvent.submit(saving.closest('form')!)
+  expect(action).toHaveBeenCalledOnce()
+})
+
+it('the reloaded add form puts back what was typed, once', () => {
+  sessionStorage.setItem(draftKey, JSON.stringify({ name: 'Sweater', details: 'Green, size XS', link: 'asos.com/sweater' }))
+  setup({ draftKey })
+  expect(values()).toEqual(['Sweater', 'Green, size XS', 'asos.com/sweater'])
+  expect(sessionStorage.getItem(draftKey)).toBeNull()
+  cleanup()
+  setup({ draftKey })
+  expect(values()).toEqual(['', '', ''])
+})
+
+it('a form without a draft key (an edit) reloads too, but keeps nothing', async () => {
+  const reload = watchReload()
+  const { saved } = setup()
+  fill('Sweater')
+  submit()
+  await act(async () => saved.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  expect(sessionStorage.length).toBe(0)
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+it("when storage refuses (a private window can), the page still reloads, and the form still opens", async () => {
+  const reload = watchReload()
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('QuotaExceededError')
+  })
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new Error('SecurityError')
+  })
+  const { saved } = setup({ draftKey })
+  fill('Sweater')
+  submit()
+  await act(async () => saved.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  cleanup()
+  setup({ draftKey })
+  expect(values()).toEqual(['', '', ''])
+})
+
+it('signed out, a save says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const { saved } = setup({ draftKey })
+  fill('Sweater')
+  submit()
+  await act(async () => saved.reject(redirectTo('/')))
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.getByRole('button', { name: copy.saving })).toHaveProperty('disabled', true)
+  expect(reload).not.toHaveBeenCalled()
+  expect(sessionStorage.length).toBe(0)
 })

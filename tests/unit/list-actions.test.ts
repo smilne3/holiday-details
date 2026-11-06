@@ -7,6 +7,8 @@ import {
   unclaimAction,
   updateItemAction,
 } from '@/app/list/actions'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
+import { getURLFromRedirectError } from 'next/dist/client/components/redirect'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -60,19 +62,28 @@ const itemNames = async (ownerId: string) =>
 const buyerOf = async (itemId: string) =>
   (await t.db.query<{ buyer_id: string }>('select buyer_id from claims where item_id = $1', [itemId]))[0]?.buyer_id
 
-it('every action refuses a signed-out request, writes nothing, and refreshes nothing', async () => {
+// A Server Action's redirect() throws Next's redirect error, which the browser's router follows.
+async function redirectedTo(call: Promise<unknown>): Promise<string | null> {
+  try {
+    await call
+    return null
+  } catch (e) {
+    return isRedirectError(e) ? getURLFromRedirectError(e) : null
+  }
+}
+
+it('every action sends a signed-out request to /, the tap-the-link page, and writes and refreshes nothing', async () => {
   const kite = await itemRow(t.db, f.leo.id, 'Kite')
   await claimRow(t.db, kite, f.grandma.id)
-  const signedOut = { ok: false, error: copy.notSignedIn('Maya') }
 
+  // No cookie, and a cookie whose link is no one's (replaced by the organizer, say).
   for (const token of [undefined, 'not-a-real-token']) {
     cookie.token = token
-    expect(await claimAction(kite)).toBe('not-allowed')
-    // Undo has nothing to answer with, so it fails, rather than seem to have worked.
-    await expect(unclaimAction(kite)).rejects.toThrow()
-    expect(await addItemAction(f.leo.id, null, form({ name: 'Drum', details: '', link: '' }))).toEqual(signedOut)
-    expect(await updateItemAction(kite, null, form({ name: 'Red kite', details: '', link: '' }))).toEqual(signedOut)
-    expect(await removeItemAction(kite)).toEqual(signedOut)
+    expect(await redirectedTo(claimAction(kite))).toBe('/')
+    expect(await redirectedTo(unclaimAction(kite))).toBe('/')
+    expect(await redirectedTo(addItemAction(f.leo.id, null, form({ name: 'Drum', details: '', link: '' })))).toBe('/')
+    expect(await redirectedTo(updateItemAction(kite, null, form({ name: 'Red kite', details: '', link: '' })))).toBe('/')
+    expect(await redirectedTo(removeItemAction(kite))).toBe('/')
   }
 
   expect(await itemNames(f.leo.id)).toEqual(['Kite'])

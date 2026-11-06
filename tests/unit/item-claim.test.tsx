@@ -3,8 +3,12 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ItemClaim } from '@/components/ItemClaim'
 import { copy } from '@/lib/copy'
 import type { ClaimResult } from '@/lib/types'
+import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 // A made-up item id. The claim and unclaim fakes answer only when the test says so, the way a
 // slow network would.
@@ -88,7 +92,7 @@ it("a failed save says That didn't save. Please try again. and offers the button
   expect(claim).toHaveBeenCalledTimes(2)
 })
 
-it("'not-allowed' (signed out since the page loaded) is a failed save, not a ✓", async () => {
+it("'not-allowed' (the viewer's own item, which the page never offers) is a failed save, not a ✓", async () => {
   const { claimed } = setup()
   fireEvent.click(buyButton())
   await act(async () => claimed.resolve('not-allowed'))
@@ -147,4 +151,48 @@ it('follows the page when a refresh says the claim changed elsewhere, so a ✓ i
   rerender(<ItemClaim itemId={id} initial="mine" claim={claim} unclaim={unclaim} />)
   screen.getByText(copy.youreBuying)
   expect(screen.queryByText(copy.addedToBuying)).toBeNull()
+})
+
+it("on a page loaded before a deploy, the tap reloads it, with no ✓ and no 'try again'", async () => {
+  const reload = watchReload()
+  const { claim, claimed } = setup()
+  // Nothing reloads on its own, only in answer to a tap.
+  expect(reload).not.toHaveBeenCalled()
+  fireEvent.click(buyButton())
+  await act(async () => claimed.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  expect(screen.queryByText(/✓/)).toBeNull()
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  // Saving… until the page goes, with nothing more sent.
+  expect(screen.getByRole('button', { name: copy.saving })).toHaveProperty('disabled', true)
+  expect(claim).toHaveBeenCalledOnce()
+})
+
+it('an Undo on a page loaded before a deploy reloads it too, and the ✓ stays until then', async () => {
+  const reload = watchReload()
+  const { undone } = setup('mine')
+  fireEvent.click(screen.getByRole('button', { name: copy.undo }))
+  await act(async () => undone.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  screen.getByText(copy.youreBuying)
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  expect(screen.getByRole('button', { name: copy.saving })).toHaveProperty('disabled', true)
+})
+
+it('signed out, a tap says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const buying = setup()
+  fireEvent.click(buyButton())
+  await act(async () => buying.claimed.reject(redirectTo('/')))
+  expect(screen.queryByText(/✓/)).toBeNull()
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  screen.getByRole('button', { name: copy.saving })
+  cleanup()
+
+  const undoing = setup('mine')
+  fireEvent.click(screen.getByRole('button', { name: copy.undo }))
+  await act(async () => undoing.undone.reject(redirectTo('/')))
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  screen.getByRole('button', { name: copy.saving })
+  expect(reload).not.toHaveBeenCalled()
 })

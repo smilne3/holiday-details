@@ -64,7 +64,12 @@ export default async function OrganizerPage() {
       </div>
 
       <section className="mt-6 rounded-xl border border-item-line bg-white p-4">
-        <NameForm action={createHouseholdAction} label={copy.fieldHouseholdName} buttons={[{ label: copy.addHousehold }]} />
+        <NameForm
+          action={createHouseholdAction}
+          label={copy.fieldHouseholdName}
+          buttons={[{ label: copy.addHousehold }]}
+          draftKey="add-household"
+        />
       </section>
     </main>
   )

@@ -4,6 +4,7 @@ import { HouseholdCard, type OrganizerActions } from '@/components/organizer/Hou
 import { PersonRow } from '@/components/organizer/PersonRow'
 import { copy } from '@/lib/copy'
 import type { OrganizerData, Result } from '@/lib/types'
+import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
 // Made-up ids and links. The actions are fakes that answer only when the test says so, the way a
 // slow network would.
@@ -39,9 +40,10 @@ function fakeActions() {
     deletePerson: vi.fn<OrganizerActions['deletePerson']>(next),
     replaceLink: vi.fn<OrganizerActions['replaceLink']>(next),
   }
-  // The answer to the latest call.
+  // The answer to the latest call, or what it fails with.
   const answer = (result: Result) => act(async () => answers.at(-1)!.resolve(result))
-  return { actions, answer }
+  const fail = (error: unknown) => act(async () => answers.at(-1)!.reject(error))
+  return { actions, answer, fail }
 }
 
 type Person = OrganizerData['households'][number]['people'][number]
@@ -75,7 +77,11 @@ beforeEach(() => {
   writeText = vi.fn<(text: string) => Promise<void>>(async () => {})
   setClipboard({ writeText })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+  sessionStorage.clear()
+})
 
 const benLink = () => `${window.location.origin}/p/${benToken}`
 
@@ -388,4 +394,79 @@ it('a save that fails on the way says so, rather than nothing', async () => {
   fireEvent.change(screen.getByLabelText(copy.fieldNewPerson), { target: { value: 'Zed' } })
   await act(async () => fireEvent.click(button(copy.addAdult)))
   screen.getByText(copy.saveFailed)
+})
+
+it.each([
+  ['Replace link', copy.replaceLink],
+  ['Remove', copy.remove],
+])("%s on a page loaded before a deploy reloads it, and says neither done nor 'try again'", async (_, start) => {
+  const reload = watchReload()
+  const { fail } = row(ben)
+  expect(reload).not.toHaveBeenCalled()
+  fireEvent.click(button(start))
+  fireEvent.click(button(copy.yes))
+  await fail(staleAction())
+  expect(reload).toHaveBeenCalledOnce()
+  expect(screen.queryByText(copy.linkReplaced)).toBeNull()
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(button(copy.saving)).toHaveProperty('disabled', true)
+})
+
+it('signed out, Replace link says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const { fail } = row(ben)
+  fireEvent.click(button(copy.replaceLink))
+  fireEvent.click(button(copy.yes))
+  await fail(redirectTo('/'))
+  expect(screen.queryByText(copy.linkReplaced)).toBeNull()
+  expect(screen.queryByRole('alert')).toBeNull()
+  button(copy.saving)
+  expect(reload).not.toHaveBeenCalled()
+})
+
+it("on a page loaded before a deploy, the add-person form keeps the name across the reload, under its household", async () => {
+  const reload = watchReload()
+  const { fail } = card()
+  const name = () => screen.getByLabelText(copy.fieldNewPerson) as HTMLInputElement
+  fireEvent.change(name(), { target: { value: 'Pip' } })
+  fireEvent.click(button(copy.addKid))
+  await fail(staleAction())
+  expect(reload).toHaveBeenCalledOnce()
+  expect(screen.queryByRole('alert')).toBeNull()
+  // Saving… on the button that was pressed, until the page goes.
+  expect(button(copy.saving)).toHaveProperty('disabled', true)
+  expect(button(copy.addAdult)).toHaveProperty('disabled', true)
+
+  // The reloaded page puts it back, in that household's card only, once.
+  cleanup()
+  card()
+  expect(name().value).toBe('Pip')
+  cleanup()
+  card({ id: ids.samPriya, name: 'Sam & Priya', people: [] })
+  expect(name().value).toBe('')
+  cleanup()
+  card()
+  expect(name().value).toBe('')
+})
+
+it('a rename on a page loaded before a deploy reloads it, and keeps nothing', async () => {
+  const reload = watchReload()
+  const { fail } = card()
+  fireEvent.click(button(copy.rename))
+  fireEvent.change(screen.getByLabelText(copy.fieldHouseholdName), { target: { value: 'The Smiths' } })
+  fireEvent.click(button(copy.save))
+  await fail(staleAction())
+  expect(reload).toHaveBeenCalledOnce()
+  expect(sessionStorage.length).toBe(0)
+})
+
+it('signed out, Add an adult says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const { fail } = card()
+  fireEvent.change(screen.getByLabelText(copy.fieldNewPerson), { target: { value: 'Zed' } })
+  fireEvent.click(button(copy.addAdult))
+  await fail(redirectTo('/'))
+  expect(screen.queryByRole('alert')).toBeNull()
+  button(copy.saving)
+  expect(reload).not.toHaveBeenCalled()
 })

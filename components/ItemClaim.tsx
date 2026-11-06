@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving } from '@/lib/stale-page'
 import type { ClaimResult } from '@/lib/types'
 
 type Status = 'open' | 'claiming' | 'mine' | 'undoing' | 'taken' | 'gone'
@@ -12,6 +13,9 @@ type Status = 'open' | 'claiming' | 'mine' | 'undoing' | 'taken' | 'gone'
 //     before the button redraws as disabled
 //   - the ✓ shows only after the server says 'claimed'; until then the button reads Saving…
 //   - a save that fails says so, and the button comes back to try again
+//   - except when the page is on its way out (lib/stale-page.ts): a page from before a deploy
+//     reloads, and someone signed out is being sent to the tap-the-link page. Then it says nothing
+//     and stays as Saving… until the page goes, since "try again" couldn't work
 //
 // The page refreshes after a claim or an Undo, and ListView keys this by item id, so this instance
 // carries on through it: the "Added to Gifts I'm buying" hint, which only this tap earned, lives
@@ -56,11 +60,12 @@ export function ItemClaim({
       } else if (result === 'taken' || result === 'gone') {
         setStatus(result)
       } else {
-        // 'not-allowed': the viewer's link stopped working since the page loaded. It didn't save.
+        // 'not-allowed': the viewer's own item, which the page never offers. It didn't save.
         setStatus('open')
         setFailed(true)
       }
-    } catch {
+    } catch (e) {
+      if (pageIsLeaving(e)) return
       setStatus('open')
       setFailed(true)
     } finally {
@@ -77,7 +82,8 @@ export function ItemClaim({
       await unclaim(itemId)
       setStatus('open')
       setJustClaimed(false)
-    } catch {
+    } catch (e) {
+      if (pageIsLeaving(e)) return
       // The claim is still there, so the ✓ stays.
       setStatus('mine')
       setFailed(true)

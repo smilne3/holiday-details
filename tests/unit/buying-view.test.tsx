@@ -3,8 +3,12 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { BuyingView } from '@/components/BuyingView'
 import { copy } from '@/lib/copy'
 import type { BuyingGroup } from '@/lib/types'
+import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 // Grandma's Gifts I'm buying, as getBuying returns it: Leo's sweater and yo-yo (the yo-yo since
 // taken off his list), and Priya's scarf, edited after Grandma claimed it. The ids and links are
@@ -100,7 +104,7 @@ it('two taps that land before the page redraws still make one call', async () =>
 it("an Undo that fails says That didn't save. Please try again. and keeps the gift", async () => {
   const { unclaim, undone } = show()
   fireEvent.click(undoIn('Yo-yo'))
-  await act(async () => undone.reject(new Error('signed out')))
+  await act(async () => undone.reject(new Error('the network dropped')))
   within(row('Yo-yo')).getByText(copy.saveFailed)
   within(row('Yo-yo')).getByText(copy.removedFrom('Leo'))
   expect(undoIn('Yo-yo')).toHaveProperty('disabled', false)
@@ -157,4 +161,27 @@ it('shows Signed in as Maya and ‹ All lists', () => {
   screen.getByRole('heading', { level: 1, name: copy.giftsImBuying })
   screen.getByText(copy.signedInAs('Maya'))
   expect(screen.getByRole('link', { name: copy.allLists }).getAttribute('href')).toBe('/p/dev-maya')
+})
+
+it("an Undo on a page loaded before a deploy reloads it, and the gift stays until then, with no 'try again'", async () => {
+  const reload = watchReload()
+  const { undone } = show()
+  expect(reload).not.toHaveBeenCalled()
+  fireEvent.click(undoIn('Yo-yo'))
+  await act(async () => undone.reject(staleAction()))
+  expect(reload).toHaveBeenCalledOnce()
+  within(row('Yo-yo')).getByText(copy.removedFrom('Leo'))
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  expect(within(row('Yo-yo')).getByRole('button', { name: copy.saving })).toHaveProperty('disabled', true)
+})
+
+it('signed out, an Undo says nothing of its own while the server sends the page to the tap-the-link page', async () => {
+  const reload = watchReload()
+  const { undone } = show()
+  fireEvent.click(undoIn('Yo-yo'))
+  await act(async () => undone.reject(redirectTo('/')))
+  screen.getByText('Yo-yo')
+  expect(screen.queryByText(copy.saveFailed)).toBeNull()
+  within(row('Yo-yo')).getByRole('button', { name: copy.saving })
+  expect(reload).not.toHaveBeenCalled()
 })

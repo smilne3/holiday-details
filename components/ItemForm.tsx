@@ -1,7 +1,8 @@
 'use client'
 
-import { startTransition, useActionState, useId, useRef, type FormEvent } from 'react'
+import { startTransition, useActionState, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
 
 // The add form, and the same three fields for editing an item. `action` is a Server Action with
@@ -13,42 +14,58 @@ import type { Result } from '@/lib/types'
 // a time: a second tap or Enter while saving sends nothing, so a slow network can't add an item
 // twice.
 //
+// When the page is on its way out (lib/stale-page.ts), it says nothing and stays as Saving… until
+// the page goes. The add form passes a draftKey, so what was typed survives a reload after a deploy
+// and is put back as the form mounts. The edit form passes none, and reloads without its edit.
+//
 // The inputs are 16px (text-base) so a phone doesn't zoom in on them, and the link field is plain
 // text: the browser's own url check would refuse "amazon.com/…", which the server accepts.
 export function ItemForm({
   action,
   submitLabel,
   initial,
+  draftKey,
   onSaved,
   onCancel,
 }: {
   action: (prev: Result | null, form: FormData) => Promise<Result>
   submitLabel: string
   initial?: { name: string; details: string; link: string }
+  draftKey?: string
   onSaved?: () => void
   onCancel?: () => void
 }) {
   const id = useId()
   const formRef = useRef<HTMLFormElement>(null)
   const busy = useRef(false)
+  const [leaving, setLeaving] = useState(false)
+
+  useEffect(() => {
+    if (draftKey) restoreDraft(draftKey, formRef.current)
+  }, [draftKey])
 
   const [state, dispatch, pending] = useActionState(
-    async (prev: Result | null, form: FormData): Promise<Result> => {
+    async (prev: Result | null, form: FormData): Promise<Result | null> => {
       try {
         const result = await action(prev, form)
         if (result.ok) {
           formRef.current?.reset()
           onSaved?.()
         }
-        return result
-      } catch {
-        return { ok: false, error: copy.saveFailed }
-      } finally {
         busy.current = false
+        return result
+      } catch (e) {
+        if (pageIsLeaving(e, draftKey ? { key: draftKey, form: formRef.current } : undefined)) {
+          setLeaving(true) // and busy stays set: nothing more is sent from this page
+          return prev
+        }
+        busy.current = false
+        return { ok: false, error: copy.saveFailed }
       }
     },
     null,
   )
+  const saving = pending || leaving
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -92,10 +109,10 @@ export function ItemForm({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={pending}
+          disabled={saving}
           className="min-h-11 w-full rounded-lg bg-accent px-5 font-semibold text-white disabled:opacity-70 md:w-auto"
         >
-          {pending ? copy.saving : submitLabel}
+          {saving ? copy.saving : submitLabel}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="min-h-11 px-2 font-medium text-link underline">

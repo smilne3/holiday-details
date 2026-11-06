@@ -8,6 +8,8 @@ import {
   replaceLinkAction,
   updatePersonAction,
 } from '@/app/organizer/actions'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
+import { getURLFromRedirectError } from 'next/dist/client/components/redirect'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -78,12 +80,23 @@ function everyAction() {
   ]
 }
 
-it('every action refuses a signed-out request, writes nothing, and refreshes nothing', async () => {
+// A Server Action's redirect() throws Next's redirect error, which the browser's router follows.
+async function redirectedTo(call: Promise<unknown>): Promise<string | null> {
+  try {
+    await call
+    return null
+  } catch (e) {
+    return isRedirectError(e) ? getURLFromRedirectError(e) : null
+  }
+}
+
+it('every action sends a signed-out request to /, the tap-the-link page, and writes and refreshes nothing', async () => {
   const before = await snapshot()
-  const signedOut = { ok: false, error: copy.notSignedIn('Maya') }
+  // No cookie, and a cookie whose link is no one's (replaced by the organizer, say).
   for (const token of [undefined, 'not-a-real-token']) {
     as(token)
-    for (const result of await Promise.all(everyAction())) expect(result).toEqual(signedOut)
+    const calls = everyAction()
+    expect(await Promise.all(calls.map(redirectedTo))).toEqual(calls.map(() => '/'))
   }
   expect(await snapshot()).toEqual(before)
   expect(refresh).not.toHaveBeenCalled()
@@ -129,10 +142,7 @@ it("replaceLinkAction gives Ben a new link, and the old one stops working", asyn
 
   // The old link now signs no one in, so it can't write anything either.
   as('dev-ben')
-  expect(await createHouseholdAction(null, form({ name: 'Aunt Jo' }))).toEqual({
-    ok: false,
-    error: copy.notSignedIn('Maya'),
-  })
+  expect(await redirectedTo(createHouseholdAction(null, form({ name: 'Aunt Jo' })))).toBe('/')
 })
 
 it('a refused write says why and refreshes nothing', async () => {

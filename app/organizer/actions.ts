@@ -1,7 +1,7 @@
 'use server'
 
 import { refresh } from 'next/cache'
-import { copy } from '@/lib/copy'
+import { redirect } from 'next/navigation'
 import {
   addPerson,
   createHousehold,
@@ -10,7 +10,6 @@ import {
   replaceLink,
   updatePerson,
 } from '@/lib/data/organizer'
-import { getOrganizerName } from '@/lib/data/people'
 import { getDb } from '@/lib/db'
 import { getViewer } from '@/lib/session'
 import type { PersonKind, Result } from '@/lib/types'
@@ -22,10 +21,13 @@ import type { PersonKind, Result } from '@/lib/types'
 // After a write that went in, refresh() re-renders the page in the same response, so it shows
 // what the database now holds. A refused write doesn't refresh: the form that sent it is showing
 // why, with what was typed still in it.
+//
+// Signed out (no cookie, or a replaced link), every action sends the browser to /, which says to
+// tap the link in the email. redirect() throws, so nothing after it runs.
 
 export async function createHouseholdAction(_prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await createHousehold(await getDb(), viewer, field(form, 'name')))
 }
 
@@ -35,7 +37,7 @@ export async function renameHouseholdAction(
   form: FormData,
 ): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await renameHousehold(await getDb(), viewer, householdId, field(form, 'name')))
 }
 
@@ -43,7 +45,7 @@ export async function renameHouseholdAction(
 // anything else.
 export async function addPersonAction(householdId: string, _prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(
     await addPerson(await getDb(), viewer, {
       name: field(form, 'name'),
@@ -55,7 +57,7 @@ export async function addPersonAction(householdId: string, _prev: Result | null,
 
 export async function updatePersonAction(personId: string, _prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(
     await updatePerson(await getDb(), viewer, personId, {
       name: field(form, 'name'),
@@ -66,25 +68,19 @@ export async function updatePersonAction(personId: string, _prev: Result | null,
 
 export async function deletePersonAction(personId: string): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await deletePerson(await getDb(), viewer, personId))
 }
 
 export async function replaceLinkAction(personId: string): Promise<Result> {
   const viewer = await getViewer()
-  if (!viewer) return signedOut()
+  if (!viewer) redirect('/')
   return refreshed(await replaceLink(await getDb(), viewer, personId))
 }
 
 function refreshed(result: Result): Result {
   if (result.ok) refresh()
   return result
-}
-
-// A signed-out write gets the not-signed-in page's own words, which say what to do.
-async function signedOut(): Promise<Result> {
-  const organizer = await getOrganizerName(await getDb())
-  return { ok: false, error: copy.notSignedIn(organizer ?? copy.organizerFallback) }
 }
 
 // A form field as text. lib/data trims it, so it must be a string: a forged request can leave a

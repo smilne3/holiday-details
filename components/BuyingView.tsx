@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
+import { pageIsLeaving } from '@/lib/stale-page'
 import type { BuyingGroup } from '@/lib/types'
 
 // Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
@@ -93,8 +94,9 @@ export function BuyingView({
 
 // Undo, as on a wish list: one call per tap, even two taps that land before the button redraws as
 // disabled; Saving… while it saves; and a failure that says so and leaves the gift where it is,
-// since the claim is still there. The button is described by the item's name, so a screen reader
-// says which gift each Undo is for.
+// since the claim is still there. When the page is on its way out (lib/stale-page.ts) it says
+// nothing and stays as Saving… until the page goes. The button is described by the item's name,
+// so a screen reader says which gift each Undo is for.
 //
 // The outer element stays put whatever the state, so screen readers announce each change in it.
 function Undo({
@@ -118,12 +120,13 @@ function Undo({
     try {
       await unclaim(itemId)
       onUndone(itemId)
-    } catch {
+    } catch (e) {
+      if (pageIsLeaving(e)) return
       setFailed(true)
     } finally {
       busy.current = false
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   return (
