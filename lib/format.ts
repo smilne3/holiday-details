@@ -9,6 +9,14 @@ export function keptBy(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`
 }
 
+// An item's price as the list shows it. It's stored as typed, so a bare number such as "40" or
+// "12.50" gets a dollar sign ("$40"), and anything else ("about $25", "$20–30") shows exactly as
+// written.
+export function shownPrice(price: string): string {
+  const s = price.trim()
+  return /^\d+(\.\d{1,2})?$/.test(s) ? `$${s}` : price
+}
+
 // The shop's domain, shown in place of the full link: "asos.com". null for a stored link that
 // isn't a web address at all. The app never stores one, but a row typed into Supabase's SQL Editor
 // can hold anything the database's ^https?:// check lets through, such as "https://", and a throw
