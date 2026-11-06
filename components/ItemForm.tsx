@@ -6,7 +6,7 @@ import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
-// The add form, and the same three fields for editing an item. `action` is a Server Action with
+// The add form, and the same four fields for editing an item. `action` is a Server Action with
 // the owner's or the item's id already bound.
 //
 // It submits from onSubmit rather than <form action>, because React clears a form action's fields
@@ -25,7 +25,9 @@ import { useHydrated } from '@/lib/use-hydrated'
 // and is put back as the form mounts. The edit form passes none, and reloads without its edit.
 //
 // The inputs are 16px (text-base) so a phone doesn't zoom in on them, and the link field is plain
-// text: the browser's own url check would refuse "amazon.com/…", which the server accepts.
+// text: the browser's own url check would refuse "amazon.com/…", which the server accepts. The price
+// is plain text too, with the ordinary keyboard: it's "about $25" as often as "40", and a number
+// keypad would hide the "$".
 export function ItemForm({
   action,
   submitLabel,
@@ -36,7 +38,7 @@ export function ItemForm({
 }: {
   action: (prev: Result | null, form: FormData) => Promise<Result>
   submitLabel: string
-  initial?: { name: string; details: string; link: string }
+  initial?: { name: string; price: string; details: string; link: string }
   draftKey?: string
   onSaved?: () => void
   onCancel?: () => void
@@ -84,6 +86,7 @@ export function ItemForm({
 
   const fields = [
     { name: 'name', label: copy.fieldName, value: initial?.name },
+    { name: 'price', label: copy.fieldPrice, value: initial?.price },
     { name: 'details', label: copy.fieldDetails, value: initial?.details },
     { name: 'link', label: copy.fieldLink, value: initial?.link },
   ]

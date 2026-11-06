@@ -138,7 +138,12 @@ export function ListView({
                     <ItemForm
                       action={update(item.id)}
                       submitLabel={copy.save}
-                      initial={{ name: item.name, details: item.details ?? '', link: item.url ?? '' }}
+                      initial={{
+                        name: item.name,
+                        price: item.price ?? '',
+                        details: item.details ?? '',
+                        link: item.url ?? '',
+                      }}
                       onSaved={() => setEditing(null)}
                       onCancel={() => setEditing(null)}
                     />

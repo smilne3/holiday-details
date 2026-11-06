@@ -58,7 +58,7 @@ const mayaOwn: ListViewData = {
   canEdit: true,
   canClaim: false,
   items: [
-    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', price: null, details: 'Size M', url: null },
+    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', price: '15', details: 'Size M', url: null },
     { id: '00000000-0000-4000-8000-0000000000d2', name: 'Bird feeder', price: null, details: null, url: null },
   ],
 }
@@ -217,6 +217,7 @@ it("Edit opens the item's form, filled in; Save sends its id; the form closes on
   const { actions } = show(mayaOwn)
   fireEvent.click(within(row('Gardening gloves')).getByRole('button', { name: copy.edit }))
   const card = screen.getByDisplayValue('Gardening gloves').closest('li')!
+  expect((within(card).getByLabelText(copy.fieldPrice) as HTMLInputElement).value).toBe('15')
   expect((within(card).getByLabelText(copy.fieldDetails) as HTMLInputElement).value).toBe('Size M')
   expect((within(card).getByLabelText(copy.fieldLink) as HTMLInputElement).value).toBe('')
   fireEvent.change(within(card).getByLabelText(copy.fieldName), { target: { value: 'Garden gloves' } })
@@ -305,7 +306,10 @@ it('an empty list says so', () => {
   screen.getByText(copy.listEmpty)
 })
 
-const typed = () => [copy.fieldName, copy.fieldDetails, copy.fieldLink].map(l => (screen.getByLabelText(l) as HTMLInputElement).value)
+const typed = () =>
+  [copy.fieldName, copy.fieldPrice, copy.fieldDetails, copy.fieldLink].map(
+    l => (screen.getByLabelText(l) as HTMLInputElement).value,
+  )
 
 it('on a page loaded before a deploy, the add form keeps what was typed across the reload, under its owner', async () => {
   const reload = watchReload()
@@ -313,6 +317,7 @@ it('on a page loaded before a deploy, the add form keeps what was typed across t
   actions.add.mockRejectedValueOnce(staleAction())
   show(leoKept, 'Maya', actions)
   fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Kite' } })
+  fireEvent.change(screen.getByLabelText(copy.fieldPrice), { target: { value: 'about $25' } })
   fireEvent.change(screen.getByLabelText(copy.fieldDetails), { target: { value: 'Red' } })
   fireEvent.change(screen.getByLabelText(copy.fieldLink), { target: { value: 'shop.example/kite' } })
   fireEvent.click(screen.getByRole('button', { name: copy.addToList('Leo') }))
@@ -323,14 +328,14 @@ it('on a page loaded before a deploy, the add form keeps what was typed across t
   // The reloaded page puts it back, once.
   cleanup()
   show(leoKept, 'Maya')
-  expect(typed()).toEqual(['Kite', 'Red', 'shop.example/kite'])
+  expect(typed()).toEqual(['Kite', 'about $25', 'Red', 'shop.example/kite'])
   cleanup()
   show(leoKept, 'Maya')
-  expect(typed()).toEqual(['', '', ''])
+  expect(typed()).toEqual(['', '', '', ''])
   // Another list's add form keeps nothing of Leo's.
   cleanup()
   show(mayaOwn, 'Maya')
-  expect(typed()).toEqual(['', '', ''])
+  expect(typed()).toEqual(['', '', '', ''])
 })
 
 // The reloaded page shows the item as it is now. An edit on a page left open across a deploy is
