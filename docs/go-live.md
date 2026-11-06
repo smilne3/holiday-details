@@ -35,7 +35,9 @@ it holds data, so check all three before creating anything.
 
 ### Create the project
 
-1. In your personal organization, click **New project**.
+1. In your personal organization, click **New project**. The Free plan allows two active projects,
+   and your budgeting app may already be one of them, so if Supabase says you've reached the limit,
+   that's why.
 2. **Project name:** `holiday-details`.
    **Why:** it matches the repository, so you'll know what it is next year.
 3. **Database password:** click **Generate a password**. Copy it into a new password-manager entry
@@ -164,7 +166,12 @@ it holds data, so check all three before creating anything.
 3. Change the end of the address to `/p/dev-maya`. You're now Maya, the organizer. Check that her own
    list shows no claims, that Leo's list (her kid's) shows Grandma's claim, and that the Organizer
    page opens.
-4. Look for anything hard to read, hard to tap, cut off, or scrolling sideways. Tell Claude what you
+4. If you'll copy invitations from your phone, tap **Copy invitation** on Ben's row of the Organizer
+   page. It should say **Copied**. Paste it into a new email draft to see it whole, then delete the
+   draft.
+   **Why:** a phone copies differently from a computer, and here a copy that fails costs nothing. If
+   it can't copy, the invitation shows in a box for you to select and copy yourself.
+5. Look for anything hard to read, hard to tap, cut off, or scrolling sideways. Tell Claude what you
    find. Fixes go on the same branch and get a new preview.
 
 A preview keeps its made-up family in the memory of whichever server instance answers, and Vercel can
@@ -202,8 +209,10 @@ demo. Production keeps everything in Supabase.
    names here and nowhere else, so they stay out of the repository.
 3. Click **Run**, once. It returns one row with a `token`, a 64-character string of letters and
    digits. Copy it into your password manager.
-4. Open `https://<production address>/p/<token>`. It says "Hi, <your first name>". Bookmark it if you
-   like.
+4. Type `https://<production address>/p/<token>` into the address bar yourself, rather than opening
+   the site from a Vercel page. It says "Hi, <your first name>". Bookmark it if you like.
+   **Why:** the invitations in step 6.6 are built from the address in this tab, so it has to be the
+   production address.
 5. Click **Organizer page** at the bottom. Then:
    - In your household's card, type your spouse's first name in **New person's name** and click
      **Add an adult**. Do the same for each kid, with **Add a kid**.
@@ -212,14 +221,21 @@ demo. Production keeps everything in Supabase.
 
    **Why:** adults get a personal link and a wish list. Kids get a wish list that the adults in their
    household keep.
-6. For each adult, click **Copy invitation**. Paste it into a new email to that person only, and send
-   it from your own email. Send yourself yours too.
+6. Before you copy anything, look at the address bar. It should start with exactly
+   `<production address>/`. If it shows anything else, such as a longer address ending in
+   `.vercel.app` with your Vercel username in it, go back to step 6.4 and come here again from there.
+   **Why:** the link in each invitation starts with the address of the page you copy it on. That
+   longer address belongs to one deployment and sits behind your Vercel login (step 3.8), so every
+   relative who tapped the link would get a Vercel login page instead of the lists.
+
+   Then, for each adult, click **Copy invitation**. Paste it into a new email to that person only, and
+   send it from your own email. Send yourself yours too.
    **Why:** the invitation holds that person's own link and tells them to keep the email. Tapping the
    link in it is how they get back in, on any phone or computer. One email per person, because each
    link signs in as exactly one person. Your own copy gives you the same way back in as everyone else.
 
-   If you'd rather check everything first, send only your spouse's invitation now. Do section 7, then
-   come back and send the rest.
+   If you'd rather check everything first, send only your spouse's invitation and your own now. Do
+   step 6.7 and section 7, then come back and send the rest.
 7. Go back to your home page with **‹ All lists**, open **My wish list**, and add one thing: type it in
    **What is it?** and click **Add to my wish list**. A real wish is fine.
    **Why:** section 7 has your spouse claim something on your list, and an empty list has nothing to
@@ -238,11 +254,20 @@ demo. Production keeps everything in Supabase.
    the order stays the same.
    **Why:** keeping the surprise is the app's main promise, and this checks it against the real
    database.
-3. **Undo the test claim.** Your spouse opens **Gifts I'm buying** and taps **Undo** on that item. It
+3. **An edit reaches the buyer.** On your own **My wish list**, tap **Edit** on that item, type
+   something in **Size, color, details (optional)**, and tap **Save**. Your spouse opens **Gifts I'm
+   buying**, where the item now says "Changed after you claimed it".
+   **Why:** this is the first time an edit, and the check behind that note, run on the real database.
+   The note is how a buyer finds out that a wish changed after they claimed it.
+4. **Undo the test claim.** Your spouse opens **Gifts I'm buying** and taps **Undo** on that item. It
    disappears, and the item says "I'll buy this" again on their view of your list.
    **Why:** a test claim left behind would sit in the real data and hide that gift from everyone else.
-4. **It works on your phone.** Open your invitation email on your phone and tap the link. The home
-   page, a wish list and Gifts I'm buying should all fit the screen, with nothing scrolling sideways.
+5. **It works on your phone.** Open your own invitation email on your phone and tap the link. The page
+   it opens should be your home page, at an address starting with exactly `<production address>/p/`.
+   The home page, a wish list and Gifts I'm buying should all fit the screen, with nothing scrolling
+   sideways.
+   **Why:** your invitation was copied the same way as everyone else's, so its address checks step
+   6.6 for all of them.
 
 ## 8. If your own link leaks
 
@@ -255,8 +280,10 @@ partway through, with no way back except this SQL. So you replace your own link 
    update people set token = new_token() where is_organizer returning name, token;
    ```
 
-2. It returns your name and your new token. Copy the token into your password manager, replacing the
-   old one.
+2. It should return one row, with your name and your new token. Copy the token into your password
+   manager, replacing the old one.
+   If it returns more than one row, step 6.1 was run more than once and there's more than one
+   organizer. Tell Claude before going on, without pasting any token.
 3. Open `https://<production address>/p/<new token>` on each of your devices.
 4. On the Organizer page, use **Copy invitation** on your own row and email it to yourself again, so
    your email holds the new link.

@@ -44,8 +44,9 @@ CI runs all three, plus `npm run build`, on every pull request (`.github/workflo
 | Dev | No `DATABASE_URL`, and not a production build (`npm run dev`) | The made-up family in `.pglite/`, seeded once |
 | Demo | No `DATABASE_URL`, a production build, and `DEMO_DATA=1` | The made-up family in memory, seeded at each start. Vercel previews use this. |
 
-A production build with neither variable set fails on every page rather than guess, so a preview can
-never fall back to the real family's data. The schema is `db/migrations/001_init.sql`.
+A production build with neither variable set fails on every page rather than guess. That way a
+production deployment that has lost `DATABASE_URL` fails loudly, instead of quietly showing the
+made-up family to the real one. The schema is `db/migrations/001_init.sql`.
 
 ## Going live
 

@@ -14,10 +14,20 @@ Name only the made-up family from `db/dev-family.ts` in code, tests, docs, commi
 
 ## Words on screen
 
-Every word the app shows comes from `lib/copy.ts`. Pages and components import it and hold no text of their own. The interface never says "getting": the owner pointed out that Grandma could read "What I'm getting" as presents she'll receive. `tests/unit/invariants.test.ts` fails on that word anywhere in `app/`, `components/` or `lib/`, and it checks the repo's other invariants too.
+Every word the app shows comes from `lib/copy.ts`. Pages and components import it and hold no text of their own. The one exception is the browser tab's title, which `app/layout.tsx` sets inline in its `metadata`. The interface never says "getting": the owner pointed out that Grandma could read "What I'm getting" as presents she'll receive. `tests/unit/invariants.test.ts` fails on that word anywhere in `app/`, `components/` or `lib/`, and it checks the repo's other invariants too.
 
 ## Who sees what
 
-Permission rules live in `lib/rules.ts` and `lib/data/*`. Every data function takes the viewer as an argument and makes its own check. Pages and Server Actions look the viewer up with `getViewer()` and pass it in.
+Permission rules live in `lib/rules.ts` and `lib/data/*`. Every data function that reads or writes for someone takes the viewer as an argument and makes its own check. Three take no viewer:
+
+- `findViewerByToken`, which is how a viewer is found.
+- `getOrganizerName`, for the page that tells someone without a working link to tap the one in their email.
+- `findItem`, which the item and claim functions call before their own checks.
+
+Server Actions and every page but one look the viewer up from the cookie with `getViewer()` and pass it in. A Server Action with no viewer calls `redirect('/')`, which is that tap-the-link page.
+
+The exception is `app/p/[token]/page.tsx`, the home page at a personal link, and it's deliberate. It calls `findViewerByToken` with the token in the address. On the first tap of an invitation, the proxy sets the cookie on that very response, so the request doesn't carry it yet. Don't change it to `getViewer()`: every invitation's first tap would then land on the tap-the-link page. `tests/unit/home-page.test.tsx` guards it.
+
+A client control that calls a Server Action passes any failure to `pageIsLeaving` in `lib/stale-page.ts` before reporting it. That reloads a page loaded before a deploy, and stays quiet while a signed-out viewer is redirected.
 
 Claims on a viewer's own list stay on the server. `getListView` doesn't read them for the list's owner, so they can't reach props, HTML or flight data. Build any new read the same way: decide on the server, and send only what this viewer may see.
