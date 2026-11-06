@@ -214,6 +214,22 @@ it('updateItemAction and removeItemAction go through the permission rules, by th
   expect(refresh).toHaveBeenCalledTimes(2)
 })
 
+// A page loaded before the price existed can call this action after a deploy, since the action's id
+// can outlive the build (lib/stale-page.ts). Its form has no price field, and that edit keeps the
+// price. A price field left blank is the person clearing it.
+it('updateItemAction: a form with no price field keeps the stored price, and a blank one clears it', async () => {
+  const kite = await itemRow(t.db, f.leo.id, 'Kite', { details: 'Red', price: '$30' })
+  const priceOf = async () =>
+    (await t.db.query<{ price: string | null }>('select price from items where id = $1', [kite]))[0].price
+  as('dev-maya')
+  expect(await updateItemAction(kite, null, form({ name: 'Kite', details: 'Blue', link: '' }))).toEqual({ ok: true })
+  expect(await priceOf()).toBe('$30')
+  expect(await updateItemAction(kite, null, form({ name: 'Kite', price: '', details: 'Blue', link: '' }))).toEqual({
+    ok: true,
+  })
+  expect(await priceOf()).toBeNull()
+})
+
 it('an edit to an item taken off the list since the page loaded says so, and refreshes so it leaves the page', async () => {
   const kite = await itemRow(t.db, f.leo.id, 'Kite')
   await t.db.query('update items set removed_at = now() where id = $1', [kite])

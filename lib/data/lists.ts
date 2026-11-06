@@ -50,7 +50,7 @@ export async function addItem(db: Db, viewer: Viewer, ownerId: string, input: It
     item.name,
     item.details,
     item.url,
-    item.price,
+    item.price ?? null,
   ])
   return { ok: true }
 }
@@ -62,20 +62,30 @@ export async function addItem(db: Db, viewer: Viewer, ownerId: string, input: It
 // updated_at moves only when something changed, the price included: Gifts I'm buying marks an item
 // changed after its claim by comparing it, and a save that changed nothing would tell the buyer
 // otherwise.
+//
+// The rule for edit fields: one missing from the form leaves the stored value alone. A deploy doesn't
+// always retire the Server Actions a page already has (lib/stale-page.ts), so a page loaded before a
+// field existed can still send its old form here, without that field. Blanking the field instead
+// would wipe what someone else typed since, and mark the item changed for its buyer. The price is
+// the first field added since the app went live, and $6 says whether the form had one. Any field
+// added later must work the same way. Name, details and link have been on every form ever served, so
+// only a forged request leaves one out, and app/list/actions.ts reads that as blank.
 export async function updateItem(db: Db, viewer: Viewer, itemId: string, input: ItemInput): Promise<Result> {
   const found = await findItem(db, itemId)
   if (!found || !canEdit(viewer, found.owner)) return refused(copy.notAllowed)
   if (found.removed) return gone()
   const item = checkInput(input)
   if (!item.ok) return item
+  // One statement, so the price kept is the one stored when the edit lands, with nothing read first.
   const rows = await db.query(
     `update items
-        set name = $2, details = $3, url = $4, price = $5,
-            updated_at = case when (name, details, url, price) is distinct from ($2, $3, $4, $5) then now()
+        set name = $2, details = $3, url = $4, price = case when $6 then $5 else price end,
+            updated_at = case when (name, details, url, price)
+                                   is distinct from ($2, $3, $4, case when $6 then $5 else price end) then now()
                               else updated_at end
       where id = $1 and removed_at is null
       returning id`,
-    [itemId, item.name, item.details, item.url, item.price],
+    [itemId, item.name, item.details, item.url, item.price ?? null, item.price !== undefined],
   )
   // No row: it was removed since the check above.
   return rows.length > 0 ? { ok: true } : gone()
@@ -177,15 +187,16 @@ async function adultsIn(db: Db, householdId: string): Promise<string[]> {
 
 // The form's fields, trimmed and checked against the schema's limits. Blank price, details or link is
 // stored as null. The price is kept as typed, not read as a number: "about $25" and "$20–30" are
-// what people write.
+// what people write. A price the form didn't have at all stays undefined, which updateItem reads as
+// "leave it as it is".
 function checkInput(input: ItemInput):
-  | { ok: true; name: string; price: string | null; details: string | null; url: string | null }
+  | { ok: true; name: string; price: string | null | undefined; details: string | null; url: string | null }
   | { ok: false; error: string } {
   const name = withoutNul(input.name).trim()
-  const price = withoutNul(input.price).trim()
+  const price = input.price === undefined ? undefined : withoutNul(input.price).trim()
   const details = withoutNul(input.details).trim()
   if (name === '') return refused(copy.nameRequired)
-  if (chars(name) > MAX_NAME || chars(price) > MAX_PRICE || chars(details) > MAX_DETAILS) {
+  if (chars(name) > MAX_NAME || chars(price ?? '') > MAX_PRICE || chars(details) > MAX_DETAILS) {
     return refused(copy.tooLong)
   }
   const link = normalizeLink(withoutNul(input.link))

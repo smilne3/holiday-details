@@ -38,10 +38,12 @@ export interface OrganizerData {
 // refresh the page: the item was taken off the list since the page loaded, so it leaves the page.
 export type Result = { ok: true } | { ok: false; error: string; gone?: true }
 
-// The add and edit form's four fields, as typed.
+// The add and edit form's four fields, as typed. price is missing, rather than '', when the form had
+// no price field at all: a page loaded before prices existed can still send its old form after a
+// deploy (lib/stale-page.ts). Missing leaves the stored price as it is; '' clears it.
 export interface ItemInput {
   name: string
-  price: string
+  price?: string
   details: string
   link: string
 }

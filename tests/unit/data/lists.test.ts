@@ -327,9 +327,11 @@ it('addItem stores the price trimmed and as typed, and a blank one as null', asy
   expect(await add(input('Yo-yo', { price: '40' }))).toEqual(ok)
   expect(await add(input('Drum', { price: '   ' }))).toEqual(ok)
   expect(await add(input('Paint set'))).toEqual(ok)
+  expect(await add({ name: 'Ball', details: '', link: '' })).toEqual(ok) // a form with no price field
 
   const rows = await db.query('select name, price from items where owner_id = $1 order by name', [f.leo.id])
   expect(rows).toEqual([
+    { name: 'Ball', price: null },
     { name: 'Drum', price: null },
     { name: 'Kite', price: 'about $25' },
     { name: 'Paint set', price: null },
@@ -360,6 +362,33 @@ it('updateItem sets, changes and clears the price', async () => {
   expect((await row(kite)).price).toBe('about $25')
   expect(await edit('  ')).toEqual(ok)
   expect((await row(kite)).price).toBeNull()
+})
+
+// A page loaded before the price existed can still call this code after a deploy (lib/stale-page.ts),
+// and its edit form has no price field. That edit must leave the price alone, not wipe it, and must
+// not tell a buyer the item changed when nothing did.
+it('updateItem with no price at all keeps the stored price, and a save that changes nothing else keeps updated_at', async () => {
+  const kite = await itemRow(db, f.leo.id, 'Kite', { details: 'Red', price: '$30' })
+  await backdate(kite)
+  const before = (await row(kite)).updated_at
+  const oldForm = { name: 'Kite', details: 'Red', link: '' }
+  expect(await updateItem(db, f.maya, kite, oldForm)).toEqual(ok)
+  expect(await row(kite)).toMatchObject({ name: 'Kite', details: 'Red', price: '$30' })
+  expect((await row(kite)).updated_at).toEqual(before)
+})
+
+it('updateItem with no price and a new details keeps the stored price, and moves updated_at', async () => {
+  const kite = await itemRow(db, f.leo.id, 'Kite', { details: 'Red', price: '$30' })
+  await backdate(kite)
+  const before = (await row(kite)).updated_at
+  expect(await updateItem(db, f.maya, kite, { name: 'Kite', details: 'Blue', link: '' })).toEqual(ok)
+  expect(await row(kite)).toMatchObject({ name: 'Kite', details: 'Blue', price: '$30' })
+  expect((await row(kite)).updated_at.getTime()).toBeGreaterThan(before.getTime())
+
+  // An item with no price, edited the same way, still has none.
+  const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
+  expect(await updateItem(db, f.maya, yoyo, { name: 'Red yo-yo', details: '', link: '' })).toEqual(ok)
+  expect(await row(yoyo)).toMatchObject({ name: 'Red yo-yo', price: null })
 })
 
 // Postgres answers a NUL in text with an error. No one types one, but a forged request can send it.
