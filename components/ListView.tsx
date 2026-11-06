@@ -8,7 +8,7 @@ import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
-import type { ClaimResult, ListItem, ListViewData, Result } from '@/lib/types'
+import type { ClaimResult, ListItem, ListViewData, OwnListItem, Result } from '@/lib/types'
 
 // The Server Actions in app/list/actions.ts. Tests pass fakes.
 export interface ListActions {
@@ -52,35 +52,35 @@ export function ListView({
 
   // The items, with the one whose edit found it gone shown as a note in its place, whether or not
   // the refresh has taken it out of view.items yet.
-  const rows: (ListItem | { goneId: string })[] = view.items.filter(item => item.id !== gone?.id)
+  const rows: (OwnListItem | ListItem | { goneId: string })[] = view.items.filter(item => item.id !== gone?.id)
   if (gone) rows.splice(Math.min(gone.at, rows.length), 0, { goneId: gone.id })
 
-  function update(item: ListItem, at: number) {
+  function update(itemId: string, at: number) {
     return async (prev: Result | null, form: FormData): Promise<Result> => {
-      const result = await actions.update(item.id, prev, form)
+      const result = await actions.update(itemId, prev, form)
       if (!result.ok && result.gone) {
         setEditing(null)
-        setGone({ id: item.id, at })
+        setGone({ id: itemId, at })
       }
       return result
     }
   }
 
-  function claimArea(item: ListItem) {
-    if (item.claim && !item.claim.mine) {
+  function claimArea(itemId: string, claim: ListItem['claim']) {
+    if (claim && !claim.mine) {
       // Capped from md: up, as ItemClaim's ✓ line is, so a long name can't take the item's room.
       return (
         <p className="mt-2 text-sm font-semibold text-neutral-600 md:mt-0 md:max-w-60">
-          {copy.isBuying(item.claim.buyerName)}
+          {copy.isBuying(claim.buyerName)}
         </p>
       )
     }
     if (!view.canClaim) return null
     return (
       <ItemClaim
-        key={item.id}
-        itemId={item.id}
-        initial={item.claim ? 'mine' : 'open'}
+        key={itemId}
+        itemId={itemId}
+        initial={claim ? 'mine' : 'open'}
         claim={actions.claim}
         unclaim={actions.unclaim}
       />
@@ -115,8 +115,10 @@ export function ListView({
                 </li>
               )
             }
-            const mine = item.claim?.mine === true
-            const taken = item.claim != null && !item.claim.mine
+            // On the viewer's own list nothing is styled as claimed, whatever an item holds.
+            const claim = own ? null : (item.claim ?? null)
+            const mine = claim?.mine === true
+            const taken = claim !== null && !claim.mine
             const tone = mine ? 'border-mine-line bg-mine' : taken ? 'border-item-line bg-taken' : 'border-item-line bg-white'
             return (
               <li
@@ -126,7 +128,7 @@ export function ListView({
                 <div className="min-w-0 md:col-start-1 md:row-start-1">
                   {editing === item.id ? (
                     <ItemForm
-                      action={update(item, at)}
+                      action={update(item.id, at)}
                       submitLabel={copy.save}
                       initial={{ name: item.name, details: item.details ?? '', link: item.url ?? '' }}
                       onSaved={() => setEditing(null)}
@@ -147,7 +149,9 @@ export function ListView({
                   )}
                 </div>
 
-                {!own && <div className="md:col-start-2 md:row-span-2 md:row-start-1">{claimArea(item)}</div>}
+                {!own && (
+                  <div className="md:col-start-2 md:row-span-2 md:row-start-1">{claimArea(item.id, claim)}</div>
+                )}
 
                 {view.canEdit && editing !== item.id && (
                   <div className="-ml-1 flex flex-wrap items-center gap-x-3 md:col-start-1 md:row-start-2">

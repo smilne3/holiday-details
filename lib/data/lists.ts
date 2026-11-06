@@ -2,8 +2,8 @@ import { copy } from '@/lib/copy'
 import { isUuid } from '@/lib/data/ids'
 import type { Db } from '@/lib/db/types'
 import { keptBy, normalizeLink } from '@/lib/format'
-import { canClaim, canEdit, canSeeClaims } from '@/lib/rules'
-import type { ItemInput, ListItem, ListViewData, Person, PersonKind, Result, Viewer } from '@/lib/types'
+import { canEdit, canSeeClaims } from '@/lib/rules'
+import type { ItemInput, ListItem, ListViewData, OwnListItem, Person, PersonKind, Result, Viewer } from '@/lib/types'
 
 // The schema's limits on an item (db/migrations/001_init.sql), checked here first so a long field
 // gets copy.tooLong rather than a database error.
@@ -13,25 +13,29 @@ const MAX_DETAILS = 500
 // Someone's wish list as the viewer sees it, or null when the id names no one. Items come in the
 // order they were added, so neither an edit nor a claim moves one.
 //
-// The surprise: on the viewer's own list, claims aren't read at all, so they can't reach the page
-// by any route. Those items have no claim key, rather than claim: null.
+// The surprise: the viewer's own list returns first, from a query that never reads claims, so none
+// can reach the page by any route. Its items have no claim key, rather than claim: null, and
+// ListViewData's 'own' type has no room for one. owner.id is the id as stored, so an id typed in
+// capitals is still the viewer's own.
 export async function getListView(db: Db, viewer: Viewer, ownerId: string): Promise<ListViewData | null> {
-  const owner = await findPerson(db, ownerId)
-  if (!owner) return null
-  const seesClaims = canSeeClaims(viewer, owner)
-  const [items, keepers] = await Promise.all([
-    seesClaims ? itemsWithClaims(db, viewer, owner.id) : itemsOnly(db, owner.id),
-    owner.kind === 'kid' ? adultsIn(db, owner.householdId) : [],
-  ])
-  return {
-    owner: { id: owner.id, name: owner.name, kind: owner.kind },
-    mode: !seesClaims ? 'own' : canEdit(viewer, owner) ? 'kept' : 'other',
-    // A kid's household with no adults would read "Kept by ", so it reads nothing.
-    keptBy: keepers.length > 0 ? keptBy(keepers) : null,
-    canEdit: canEdit(viewer, owner),
-    canClaim: canClaim(viewer, owner),
-    items,
+  const found = await findPerson(db, ownerId)
+  if (!found) return null
+  const owner = { id: found.id, name: found.name, kind: found.kind }
+
+  if (!canSeeClaims(viewer, found)) {
+    const items = await itemsOnly(db, found.id)
+    return { owner, mode: 'own', keptBy: null, canEdit: true, canClaim: false, items }
   }
+
+  const [items, keepers] = await Promise.all([
+    itemsWithClaims(db, viewer, found.id),
+    found.kind === 'kid' ? adultsIn(db, found.householdId) : [],
+  ])
+  // A kid's household with no adults would read "Kept by ", so it reads nothing.
+  const kept = keepers.length > 0 ? keptBy(keepers) : null
+  return canEdit(viewer, found)
+    ? { owner, mode: 'kept', keptBy: kept, canEdit: true, canClaim: true, items }
+    : { owner, mode: 'other', keptBy: kept, canEdit: false, canClaim: true, items }
 }
 
 // Adds an item to the owner's list, if the viewer keeps that list.
@@ -126,7 +130,7 @@ export async function findItem(db: Db, itemId: string): Promise<{ owner: Person;
 type ItemRow = { id: string; name: string; details: string | null; url: string | null }
 
 // The viewer's own list. This query must never touch claims.
-async function itemsOnly(db: Db, ownerId: string): Promise<ListItem[]> {
+async function itemsOnly(db: Db, ownerId: string): Promise<OwnListItem[]> {
   const rows = await db.query<ItemRow>(
     `select id, name, details, url from items
       where owner_id = $1 and removed_at is null

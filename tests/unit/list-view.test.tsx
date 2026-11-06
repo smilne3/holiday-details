@@ -94,6 +94,32 @@ it("own: shows the surprise note, Edit and Remove, Add to my wish list, and no I
   expect(screen.queryByText(/✓|is buying this/)).toBeNull()
 })
 
+it('own: nothing on your own list ever looks claimed, even if an item carried a claim', () => {
+  // Only a bug in getListView could send this, and the type forbids it (below). The page still
+  // mustn't strike through, grey or colour anything on the viewer's own list.
+  const leaked = {
+    ...mayaOwn,
+    items: [
+      { ...mayaOwn.items[0], claim: { buyerName: 'Priya', mine: false } },
+      { ...mayaOwn.items[1], claim: { buyerName: 'Maya', mine: true } },
+    ],
+  } as unknown as ListViewData
+  const { container } = show(leaked)
+  expect(container.querySelector('s')).toBeNull()
+  expect(container.querySelector('.bg-taken, .bg-mine')).toBeNull()
+  for (const item of mayaOwn.items) expect(screen.getByText(item.name).className).toContain('text-neutral-900')
+  expect(screen.queryByText(/Priya|✓/)).toBeNull()
+})
+
+it("own: the type has no room for a claim on your own list, or for claiming from it", () => {
+  const item = { id: '00000000-0000-4000-8000-0000000000d3', name: 'Scarf', details: null, url: null }
+  // @ts-expect-error: an item on your own list can't carry a claim key, not even null
+  const withClaim: ListViewData = { owner: maya, mode: 'own', keptBy: null, canEdit: true, canClaim: false, items: [{ ...item, claim: null }] }
+  // @ts-expect-error: and your own list is never one you can claim from
+  const claimable: ListViewData = { owner: maya, mode: 'own', keptBy: null, canEdit: true, canClaim: true, items: [item] }
+  expect([withClaim, claimable]).toHaveLength(2)
+})
+
 it("kept: shows Kept by Ben & Maya, the claim controls, the edit tools, and Add to Leo's wish list", () => {
   show(leoKept)
   screen.getByText(copy.keptByLine(['Ben', 'Maya']))
