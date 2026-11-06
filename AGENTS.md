@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## The repo is public
 
-Name only the made-up family from `db/dev-family.ts` in code, tests, docs, commits, issues and PRs: Ben, Maya, Leo, Ivy, Sam, Priya, Ollie, Grandma and Grandpa. The real family's names, items and links live only in the production database. Describe a bug found there in terms of the made-up family.
+Name only the made-up family from `db/dev-family.ts` in code, tests, docs, commits, issues and PRs: Ben, Maya, Leo, Ivy, Sam, Priya, Ollie, Grandma and Grandpa. Tests and comments, and the plan's sketches of them, may also use an obvious placeholder for someone outside that family, such as Zed, Pip, "Aunt Jo" or "The Smiths". The real family's names, items and links live only in the production database. Describe a bug found there in terms of the made-up family.
 
 ## Words on screen
 

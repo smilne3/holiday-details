@@ -1,5 +1,6 @@
-// A made-up family for tests, local dev and the preview demo. The repo is public, so these names
-// and items are the only ones that ever appear in it. Each adult's personal link is
+// A made-up family for tests, local dev and the preview demo. The repo is public, so this is the
+// only family it names. Tests and comments may add an obvious placeholder for someone outside it
+// (Zed, "The Smiths"), and no real name or item ever appears. Each adult's personal link is
 // /p/dev-<lowercase name>, e.g. /p/dev-maya for the organizer.
 import type { Db } from '@/lib/db/types'
 import type { Person, Viewer } from '@/lib/types'
