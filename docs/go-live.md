@@ -42,7 +42,7 @@ it holds data, so check all three before creating anything.
    **Why:** it matches the repository, so you'll know what it is next year.
 3. **Database password:** click **Generate a password**. Copy it into a new password-manager entry
    named something like "Supabase holiday-details".
-   **Why:** you need it once more, in step 2.12. Supabase won't show it again; it can only reset it.
+   **Why:** you need it once more, in step 2.13. Supabase won't show it again; it can only reset it.
 4. **Region:** a US region near most of the family. If the form offers only broad choices, such as
    **Americas**, pick that one and Supabase chooses the exact region. Once the project exists, its
    card on the organization's **Projects** page shows the region's code, such as `us-east-1`. Note
@@ -66,23 +66,26 @@ it holds data, so check all three before creating anything.
    Supabase's public API can read nothing. The app connects with the database password, which those
    rules don't limit. `main` doesn't have this file until you merge, which is why you open it on the
    branch.
-10. Run it only once. A second run stops at its first line with "already exists" and changes nothing.
+10. Start another new query. Open `db/migrations/002_item_price.sql` on GitHub, copy it the same way,
+    paste it in and click **Run**. You should see "Success. No rows returned" again.
+    **Why:** it adds the optional price ("About how much?") to every item, and every list page reads it.
+11. Run each file only once. A second run stops with "already exists" and changes nothing.
     If Supabase's Security Advisor later says "RLS Enabled No Policy" for these tables, that's the
     design described in step 2.9.
 
 ### Copy the connection string
 
-11. Click **Connect** at the top of the project. The box opens on a **Framework** tab, which is for
+12. Click **Connect** at the top of the project. The box opens on a **Framework** tab, which is for
     apps built on Supabase's own client library. This app isn't, so ignore that tab. Click the
     **Direct** tab (Connection string), choose **Transaction pooler**, which uses port `6543`, and
     copy the URI. You can't edit it there. Supabase only shows it, with `[YOUR-PASSWORD]` as a blank
-    that you fill in at step 2.12. It looks like
+    that you fill in at step 2.13. It looks like
     `postgresql://postgres.<project ref>:[YOUR-PASSWORD]@<pooler host>:6543/postgres`.
     **Why:** Vercel runs the app as many short-lived functions, each opening its own connection. The
     transaction pooler shares a few real connections among them, so the free plan's limit isn't
     reached. Supabase notes that this mode doesn't support prepared statements. The app already turns
     them off (`prepare: false` in `lib/db/postgres.ts`).
-12. Open the password-manager entry from step 2.3, click **Edit**, and paste the URI into its
+13. Open the password-manager entry from step 2.3, click **Edit**, and paste the URI into its
     **Notes** field. Copy the entry's password. In the notes, select `[YOUR-PASSWORD]` with its square
     brackets: click just before the `[`, then Shift-click just after the `]`. A double-click misses
     the brackets. Paste the password over it, then save the entry. The result has no brackets, no
@@ -93,7 +96,7 @@ it holds data, so check all three before creating anything.
 
 ### Know about the pause
 
-13. A Free project pauses after about a week with no visits. Through December the family's visits keep
+14. A Free project pauses after about a week with no visits. Through December the family's visits keep
     it awake. In January, if the app says "Something went wrong" on every page, open the Supabase
     dashboard. If the project says it's paused, press **Restore project** and wait a few minutes.
     Nothing is lost.
@@ -125,7 +128,7 @@ it holds data, so check all three before creating anything.
    lists **Environments** instead, open that and click the **Production** row; that environment's
    variables are on its page. Add this one:
    - **Key:** `DATABASE_URL`. Type just the name, with no `=`, quotes or spaces.
-   - **Value:** the finished URI from step 2.12, pasted from your password manager.
+   - **Value:** the finished URI from step 2.13, pasted from your password manager.
    - **Environments:** **Production** only. Untick Preview and Development.
    - **Sensitive:** on.
 
@@ -316,11 +319,32 @@ For anyone else's leaked link, open the Organizer page and click **Replace link*
 
 ## If something's wrong
 
-- **"Something went wrong" on every production page.** The Supabase project may be paused (step 2.13),
+- **"Something went wrong" on every production page.** The Supabase project may be paused (step 2.14),
   or `DATABASE_URL` may be wrong. To fix the variable, open **Settings** → **Environment Variables**
   (in the **Environments** layout, **Settings** → **Environments** → the **Production** row, as in
-  step 3.5), edit `DATABASE_URL`, and paste the finished URI again (step 2.12). Then open **Deployments**, and use
+  step 3.5), edit `DATABASE_URL`, and paste the finished URI again (step 2.13). Then open **Deployments**, and use
   **Redeploy** on the newest Production deployment. A deployment only picks up a changed variable when
   it's built again.
 - **A preview shows "Something went wrong".** `DEMO_DATA` is missing from Preview (step 3.6), or the
   preview was built before it was added (step 3.9).
+- **Wish lists and Gifts I'm buying say "Something went wrong" just after a merge.** The merge may
+  have brought a database change that wasn't run in Supabase first. Run it now, as in "Adding a
+  database change later" below. The pages come back without a redeploy.
+
+## Adding a database change later
+
+Some changes add a file to `db/migrations/`, as `002_item_price.sql` did for the price. Previews and
+`npm run dev` run a new file by themselves. Production's database gets it only from you, the way it
+got the first ones in section 2.
+
+1. Before you merge the pull request that adds the file, open the file on that pull request's branch
+   on GitHub. Copy it, paste it into a new query in Supabase's **SQL Editor**, and click **Run**,
+   once. You should see "Success. No rows returned".
+   **Why:** merging puts the new code into production within minutes. Code that reads a column the
+   database doesn't have yet fails on every list page, for everyone, until the database has it. A
+   change that only adds something, as `002_item_price.sql` does, is safe to run first: the code
+   already in production never asks for a column it doesn't know about.
+2. Then merge, as in section 5. Once the new Production deployment is **Ready**, open a wish list at
+   the production address.
+   **Why:** that's the first page to read the new column from the real database, so it's the check
+   that step 1 worked.
