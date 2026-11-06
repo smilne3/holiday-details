@@ -24,6 +24,14 @@ made-up family, stop the server, delete `.pglite/` and run `npm run dev` again.
 
 To try a production build with the made-up family, run `npm run build`, then `DEMO_DATA=1 npm start`.
 
+## Browsers
+
+`package.json`'s `browserslist` is Next's default list plus Safari 15, on a Mac and on an iPhone.
+Next 16 aims at Safari 16.4 and later, and its own JavaScript has syntax that iOS 15 can't read, so
+on such a phone no button would ever work. With Safari 15 listed, the build rewrites that syntax.
+Tailwind's styles are also made for Safari 16.4 and later, so an older phone may show the page less
+tidily. If the buttons ever don't come to life, a notice after about 8 seconds says what to do.
+
 ## Tests
 
 ```sh
