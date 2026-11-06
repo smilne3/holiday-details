@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
+import { forgetReload, pageIsLeaving, reloadedAfterDeploy, restoreDraft } from '@/lib/stale-page'
 import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
 afterEach(() => {
@@ -27,6 +27,34 @@ it('a stale page reloads and keeps only the named text fields', () => {
   expect(pageIsLeaving(staleAction(), { key: 'add-person:h1', form: aForm() })).toBe(true)
   expect(reload).toHaveBeenCalledOnce()
   expect(JSON.parse(sessionStorage.getItem('add-person:h1')!)).toEqual({ name: 'Pip' })
+})
+
+it('a stale page leaves word for the reloaded page to say why the tap did nothing, until it says so', () => {
+  watchReload()
+  expect(reloadedAfterDeploy()).toBe(false)
+  pageIsLeaving(staleAction())
+  expect(reloadedAfterDeploy()).toBe(true)
+  forgetReload()
+  expect(reloadedAfterDeploy()).toBe(false)
+
+  // A redirect, or an ordinary failure, leaves none.
+  pageIsLeaving(redirectTo('/'))
+  pageIsLeaving(new Error('the network dropped'))
+  expect(reloadedAfterDeploy()).toBe(false)
+})
+
+it('when storage refuses, a stale page still reloads, and the reloaded one just says nothing', () => {
+  const reload = watchReload()
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('QuotaExceededError')
+  })
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new Error('SecurityError')
+  })
+  expect(pageIsLeaving(staleAction())).toBe(true)
+  expect(reload).toHaveBeenCalledOnce()
+  expect(reloadedAfterDeploy()).toBe(false)
+  expect(() => forgetReload()).not.toThrow()
 })
 
 it("a redirect is the page leaving too, but it doesn't reload: the router is already going", () => {

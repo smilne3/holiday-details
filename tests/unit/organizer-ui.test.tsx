@@ -4,7 +4,7 @@ import { HouseholdCard, type OrganizerActions } from '@/components/organizer/Hou
 import { PersonRow } from '@/components/organizer/PersonRow'
 import { copy } from '@/lib/copy'
 import type { OrganizerData, Result } from '@/lib/types'
-import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
+import { redirectTo, staleAction, storedText, watchReload } from '@/tests/helpers/leaving'
 
 // Made-up ids and links. The actions are fakes that answer only when the test says so, the way a
 // slow network would.
@@ -471,7 +471,7 @@ it('a rename on a page loaded before a deploy reloads it, and keeps nothing', as
   fireEvent.click(button(copy.save))
   await fail(staleAction())
   expect(reload).toHaveBeenCalledOnce()
-  expect(sessionStorage.length).toBe(0)
+  expect(storedText()).not.toContain('The Smiths')
 })
 
 it('signed out, Add an adult says nothing of its own while the server sends the page to the tap-the-link page', async () => {

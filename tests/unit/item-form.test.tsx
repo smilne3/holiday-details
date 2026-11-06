@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ItemForm } from '@/components/ItemForm'
 import { copy } from '@/lib/copy'
 import type { Result } from '@/lib/types'
-import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
+import { redirectTo, staleAction, storedText, watchReload } from '@/tests/helpers/leaving'
 
 afterEach(() => {
   cleanup()
@@ -162,7 +162,7 @@ it('a form without a draft key (an edit) reloads too, but keeps nothing', async 
   submit()
   await act(async () => saved.reject(staleAction()))
   expect(reload).toHaveBeenCalledOnce()
-  expect(sessionStorage.length).toBe(0)
+  expect(storedText()).not.toContain('Sweater')
   expect(screen.queryByRole('alert')).toBeNull()
 })
 

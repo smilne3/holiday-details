@@ -20,3 +20,10 @@ export function redirectTo(url: string): unknown {
 
 // The page's reload, as a spy that leaves jsdom where it is.
 export const watchReload = () => vi.spyOn(browserPage, 'reload').mockImplementation(() => {})
+
+// Everything kept in sessionStorage, as one string, to check that what was typed isn't.
+export function storedText(): string {
+  let text = ''
+  for (let i = 0; i < sessionStorage.length; i++) text += `${sessionStorage.key(i)}=${sessionStorage.getItem(sessionStorage.key(i)!)}\n`
+  return text
+}

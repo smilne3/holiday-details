@@ -64,6 +64,8 @@ export const copy = {
   // It names no browser or setting: some of the family don't know which they use.
   ifNothingHappens: (org: string) =>
     `If nothing happens when you tap, try another phone, tablet or computer, or ask ${org}.`,
+  // After a page left open across a deploy reloads in answer to a tap, which it didn't carry out.
+  appUpdated: "The app was just updated, so your last tap didn't go through. Please tap it again.",
 
   copyLink: 'Copy link',
   copyInvitation: 'Copy invitation',

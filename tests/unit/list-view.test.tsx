@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { ListView, type ListActions } from '@/components/ListView'
 import { copy } from '@/lib/copy'
 import type { ListItem, ListViewData } from '@/lib/types'
-import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
+import { redirectTo, staleAction, storedText, watchReload } from '@/tests/helpers/leaving'
 
 afterEach(() => {
   cleanup()
@@ -344,7 +344,7 @@ it('an edit on a page loaded before a deploy reloads it, and the edit is not kep
   fireEvent.click(within(card).getByRole('button', { name: copy.save }))
   await act(async () => {})
   expect(reload).toHaveBeenCalledOnce()
-  expect(sessionStorage.length).toBe(0)
+  expect(storedText()).not.toContain('Two bird feeders')
   expect(screen.queryByText(copy.saveFailed)).toBeNull()
 })
 

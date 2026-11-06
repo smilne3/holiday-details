@@ -20,10 +20,40 @@ import { unstable_isUnrecognizedActionError, unstable_rethrow } from 'next/navig
 export function pageIsLeaving(error: unknown, draft?: Draft): boolean {
   if (unstable_isUnrecognizedActionError(error)) {
     if (draft) keepDraft(draft)
+    markReloaded()
     browserPage.reload()
     return true
   }
   return isNextRedirect(error)
+}
+
+// The reloaded page comes back as it was: the claim didn't happen, an edit is gone. So the reload
+// leaves word for it, and PageNotices says "The app was just updated…". The page that says so then
+// forgets it, so the next one doesn't.
+const RELOADED = 'reloaded-after-deploy'
+
+export function reloadedAfterDeploy(): boolean {
+  try {
+    return sessionStorage.getItem(RELOADED) !== null
+  } catch {
+    return false // storage refused: the page just doesn't say
+  }
+}
+
+export function forgetReload(): void {
+  try {
+    sessionStorage.removeItem(RELOADED)
+  } catch {
+    // Storage refused, so there's nothing to forget.
+  }
+}
+
+function markReloaded(): void {
+  try {
+    sessionStorage.setItem(RELOADED, '1')
+  } catch {
+    // Storage refused. The page still reloads; only the word is lost.
+  }
 }
 
 // The browser's reload, behind an object so tests can watch it.
