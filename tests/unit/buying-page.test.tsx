@@ -61,6 +61,7 @@ it("Grandma sees her own gifts and no one else's, with the note, and ‹ All lis
   expect(markup).toContain(html(copy.removedFrom('Leo')))
   expect(markup).toContain(html(copy.signedInAs('Grandma')))
   expect(markup).toContain('href="/p/dev-grandma"')
+  expect(markup).toContain(html(copy.ifNothingHappens('Maya')))
   expect(markup).not.toContain('Sweater')
   expect(markup).not.toContain('Priya')
 })

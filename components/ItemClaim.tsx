@@ -4,11 +4,13 @@ import { useRef, useState } from 'react'
 import { copy } from '@/lib/copy'
 import { pageIsLeaving } from '@/lib/stale-page'
 import type { ClaimResult } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 type Status = 'open' | 'claiming' | 'mine' | 'undoing' | 'taken' | 'gone'
 
 // "I'll buy this", and once it's the viewer's, "✓ You're buying this · Undo". This is where a
 // duplicate gift or a false ✓ would happen, so:
+//   - no tap before the page's JavaScript runs: both buttons are disabled until then (useHydrated)
 //   - one call per tap: a second tap while the first is saving does nothing, even one that lands
 //     before the button redraws as disabled
 //   - the ✓ shows only after the server says 'claimed'; until then the button reads Saving…
@@ -38,6 +40,7 @@ export function ItemClaim({
   const [justClaimed, setJustClaimed] = useState(false)
   const [failed, setFailed] = useState(false)
   const busy = useRef(false)
+  const hydrated = useHydrated()
 
   const [shown, setShown] = useState(initial)
   if (initial !== shown) {
@@ -101,7 +104,7 @@ export function ItemClaim({
         <button
           type="button"
           onClick={buy}
-          disabled={status === 'claiming'}
+          disabled={!hydrated || status === 'claiming'}
           className="min-h-11 w-full rounded-lg bg-accent px-[18px] font-semibold whitespace-nowrap text-white disabled:opacity-70 md:w-auto"
         >
           {status === 'claiming' ? copy.saving : copy.illBuyThis}
@@ -118,7 +121,7 @@ export function ItemClaim({
             <button
               type="button"
               onClick={undo}
-              disabled={status === 'undoing'}
+              disabled={!hydrated || status === 'undoing'}
               className="inline-flex min-h-11 items-center px-1 font-normal text-link underline disabled:no-underline disabled:opacity-70"
             >
               {status === 'undoing' ? copy.saving : copy.undo}

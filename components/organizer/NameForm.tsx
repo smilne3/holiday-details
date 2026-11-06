@@ -14,6 +14,7 @@ import {
 import { copy } from '@/lib/copy'
 import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // The organizer page's forms: a name, any other fields passed as children (a person's household),
 // and one or more buttons. A button with a name and value sends them too, so "Add an adult" and
@@ -30,7 +31,9 @@ import type { Result } from '@/lib/types'
 // was typed; the fields clear only once the server says it saved. One save at a time: a second tap
 // or Enter while saving sends nothing, so a slow network can't add someone twice. And as there,
 // when the page is on its way out (lib/stale-page.ts) it says nothing and stays as Saving…, and an
-// add form's draftKey keeps what was typed across a reload after a deploy.
+// add form's draftKey keeps what was typed across a reload after a deploy. And as there, the buttons
+// are disabled until the page's JavaScript runs, and the form is method="post", so a form the
+// browser sent itself would put nothing typed in the address.
 export function NameForm({
   action,
   label,
@@ -55,6 +58,7 @@ export function NameForm({
   const busy = useRef(false)
   const [pressed, setPressed] = useState(0)
   const [leaving, setLeaving] = useState(false)
+  const hydrated = useHydrated()
 
   useEffect(() => {
     if (draftKey) restoreDraft(draftKey, formRef.current)
@@ -100,7 +104,7 @@ export function NameForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} onKeyDown={noEnter} className="space-y-3">
+    <form ref={formRef} method="post" onSubmit={submit} onKeyDown={noEnter} className="space-y-3">
       {several && <button type="submit" disabled hidden />}
       <div>
         <label htmlFor={`${id}-name`} className="block text-sm font-medium text-neutral-700">
@@ -131,7 +135,7 @@ export function NameForm({
             name={b.name}
             value={b.value}
             data-index={i}
-            disabled={saving}
+            disabled={!hydrated || saving}
             className="min-h-11 flex-1 rounded-lg bg-accent px-5 font-semibold text-white disabled:opacity-70 md:flex-none"
           >
             {saving && pressed === i ? copy.saving : b.label}

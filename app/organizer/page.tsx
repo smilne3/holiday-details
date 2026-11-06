@@ -9,6 +9,7 @@ import {
   updatePersonAction,
 } from '@/app/organizer/actions'
 import { NotSignedIn } from '@/components/NotSignedIn'
+import { PageNotices } from '@/components/PageNotices'
 import { HouseholdCard } from '@/components/organizer/HouseholdCard'
 import { NameForm } from '@/components/organizer/NameForm'
 import { SignedInAs } from '@/components/SignedInAs'
@@ -25,7 +26,7 @@ import { getViewer } from '@/lib/session'
 export default async function OrganizerPage() {
   const [viewer, db] = await Promise.all([getViewer(), getDb()])
   if (!viewer) return <NotSignedIn organizerName={await getOrganizerName(db)} />
-  const data = await getOrganizerData(db, viewer)
+  const [data, organizerName] = await Promise.all([getOrganizerData(db, viewer), getOrganizerName(db)])
   if (!data) notFound()
 
   const households = data.households.map(({ id, name }) => ({ id, name }))
@@ -71,6 +72,7 @@ export default async function OrganizerPage() {
           draftKey="add-household"
         />
       </section>
+      <PageNotices organizerName={organizerName} />
     </main>
   )
 }

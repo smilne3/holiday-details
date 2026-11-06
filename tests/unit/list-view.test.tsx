@@ -75,7 +75,9 @@ function fakeActions() {
 
 function show(view: ListViewData, viewerName = 'Maya', actions = fakeActions()) {
   const homeHref = `/p/dev-${viewerName.toLowerCase()}`
-  const rendered = render(<ListView view={view} viewerName={viewerName} homeHref={homeHref} actions={actions} />)
+  const rendered = render(
+    <ListView view={view} viewerName={viewerName} homeHref={homeHref} organizerName="Maya" actions={actions} />,
+  )
   return { actions, ...rendered }
 }
 
@@ -195,7 +197,7 @@ it('the claim button sends the item id, and the ✓ and its hint stay through th
     ...leoOther,
     items: leoOther.items.map(i => (i.id === airpods.id ? { ...i, claim: { buyerName: 'Grandma', mine: true } } : i)),
   }
-  rerender(<ListView view={refreshed} viewerName="Grandma" homeHref="/p/dev-grandma" actions={actions} />)
+  rerender(<ListView view={refreshed} viewerName="Grandma" homeHref="/p/dev-grandma" organizerName="Maya" actions={actions} />)
   within(row('AirPods 5')).getByText(copy.youreBuying)
   within(row('AirPods 5')).getByText(copy.addedToBuying)
 })
@@ -249,6 +251,7 @@ it('an edit to an item taken off the list elsewhere says so in its place, and th
       view={{ ...leoKept, items: leoKept.items.filter(i => i.id !== sweater.id) }}
       viewerName="Maya"
       homeHref="/p/dev-maya"
+      organizerName="Maya"
       actions={actions}
     />,
   )

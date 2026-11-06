@@ -15,11 +15,13 @@ import { getViewer } from '@/lib/session'
 export default async function BuyingPage() {
   const [viewer, db] = await Promise.all([getViewer(), getDb()])
   if (!viewer) return <NotSignedIn organizerName={await getOrganizerName(db)} />
+  const [groups, organizerName] = await Promise.all([getBuying(db, viewer), getOrganizerName(db)])
   return (
     <BuyingView
-      groups={await getBuying(db, viewer)}
+      groups={groups}
       viewerName={viewer.name}
       homeHref={`/p/${encodeURIComponent(viewer.token)}`}
+      organizerName={organizerName}
       unclaim={unclaimAction}
     />
   )

@@ -17,6 +17,8 @@ import { getViewer } from '@/lib/session'
 // told to tap the link in their email; an id that names no one (removed, mistyped, made up) gets
 // "That list isn't here any more".
 //
+// The organizer's name is for the notice a phone whose buttons never work shows (PageNotices).
+//
 // getListView decides what the viewer may see. On their own list it never reads claims, so none
 // can reach ListView's props, and so none can reach the browser.
 //
@@ -26,13 +28,14 @@ export default async function ListPage({ params }: { params: Promise<{ personId:
   const { personId } = await params
   const [viewer, db] = await Promise.all([getViewer(), getDb()])
   if (!viewer) return <NotSignedIn organizerName={await getOrganizerName(db)} />
-  const view = await getListView(db, viewer, personId)
+  const [view, organizerName] = await Promise.all([getListView(db, viewer, personId), getOrganizerName(db)])
   if (!view) notFound()
   return (
     <ListView
       view={view}
       viewerName={viewer.name}
       homeHref={`/p/${encodeURIComponent(viewer.token)}`}
+      organizerName={organizerName}
       actions={{
         claim: claimAction,
         unclaim: unclaimAction,

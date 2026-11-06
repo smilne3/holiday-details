@@ -60,6 +60,10 @@ export const copy = {
   listMissing: "That list isn't here any more.",
   errorTitle: 'Something went wrong',
   tryAgain: 'Try again',
+  // Shown only on a page whose buttons never came to life, such as on a phone too old for the app.
+  // It names no browser or setting: some of the family don't know which they use.
+  ifNothingHappens: (org: string) =>
+    `If nothing happens when you tap, try another phone, tablet or computer, or ask ${org}.`,
 
   copyLink: 'Copy link',
   copyInvitation: 'Copy invitation',

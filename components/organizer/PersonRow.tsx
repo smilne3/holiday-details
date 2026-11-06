@@ -6,6 +6,7 @@ import { NameForm } from '@/components/organizer/NameForm'
 import { copy } from '@/lib/copy'
 import { pageIsLeaving } from '@/lib/stale-page'
 import type { OrganizerData, Result } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // The organizer page's Server Actions for one person (app/organizer/actions.ts). Tests pass fakes.
 export interface PersonActions {
@@ -26,7 +27,8 @@ type Step = 'idle' | 'editing' | 'askReplace' | 'replacing' | 'askRemove' | 'rem
 // Replace link and Remove ask first, right there in the row, with no browser dialog. One call per
 // tap, as with "I'll buy this". When the page is on its way out (lib/stale-page.ts), they say
 // nothing and stay as Saving… until it goes. The Copy buttons are keyed by the link, so once it's
-// replaced, a Copied that was about the old one goes.
+// replaced, a Copied that was about the old one goes. Every button is disabled until the page's
+// JavaScript runs (useHydrated).
 export function PersonRow({
   person,
   householdId,
@@ -44,8 +46,10 @@ export function PersonRow({
   const [message, setMessage] = useState<{ replaced: true } | { error: string } | null>(null)
   const busy = useRef(false)
   const selectId = useId()
+  const hydrated = useHydrated()
 
-  const writing = step === 'replacing' || step === 'removing'
+  // Replace link, Edit and Remove wait for the page's JavaScript, and for a write already going.
+  const unavailable = !hydrated || step === 'replacing' || step === 'removing'
   const link = () => `${window.location.origin}/p/${person.token}`
 
   function go(next: Step) {
@@ -84,7 +88,7 @@ export function PersonRow({
     return (
       <p className="flex flex-wrap items-center gap-x-2">
         <span className="text-sm font-semibold text-neutral-800">{question}</span>
-        <button type="button" onClick={() => write(what)} disabled={saving} className={yesButton}>
+        <button type="button" onClick={() => write(what)} disabled={!hydrated || saving} className={yesButton}>
           {saving ? copy.saving : copy.yes}
         </button>
         {!saving && (
@@ -148,15 +152,15 @@ export function PersonRow({
             </>
           )}
           {person.kind === 'adult' && !you && (
-            <button type="button" onClick={() => go('askReplace')} disabled={writing} className={linkButton}>
+            <button type="button" onClick={() => go('askReplace')} disabled={unavailable} className={linkButton}>
               {copy.replaceLink}
             </button>
           )}
-          <button type="button" onClick={() => go('editing')} disabled={writing} className={linkButton}>
+          <button type="button" onClick={() => go('editing')} disabled={unavailable} className={linkButton}>
             {copy.edit}
           </button>
           {!you && (
-            <button type="button" onClick={() => go('askRemove')} disabled={writing} className={linkButton}>
+            <button type="button" onClick={() => go('askRemove')} disabled={unavailable} className={linkButton}>
               {copy.remove}
             </button>
           )}

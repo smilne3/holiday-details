@@ -72,6 +72,7 @@ it('Maya sees every household, Signed in as Maya, and ‹ All lists goes to her 
   expect(markup).toContain(html(copy.addKid))
   // Five adults' rows can have their link replaced; Maya's own can't.
   expect(markup.split(html(copy.replaceLink)).length - 1).toBe(5)
+  expect(markup).toContain(html(copy.ifNothingHappens('Maya')))
 })
 
 // The elements the page itself puts together, without rendering what's inside each component.

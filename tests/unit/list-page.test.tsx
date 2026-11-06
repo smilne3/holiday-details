@@ -74,6 +74,8 @@ it("Grandma sees Leo's list with its keepers and claims, and ‹ All lists goes 
   expect(markup).toContain(html(copy.signedInAs('Grandma')))
   expect(markup).toContain('href="/p/dev-grandma"')
   expect(markup).not.toContain(html(copy.edit))
+  // For a phone whose buttons never come to life, hidden until CSS shows it: ask the organizer.
+  expect(markup).toContain(html(copy.ifNothingHappens('Maya')))
 })
 
 it("Maya's own list hands the page no claim at all, though Ben is buying one of her things", async () => {

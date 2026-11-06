@@ -20,3 +20,17 @@
   --color-mine-ink: #2f6b22;
   --color-taken: #f3f1ec; /* an item someone else is buying */
 }
+
+/* Hidden at first, then shown by CSS alone after about 8 seconds, with no JavaScript: the "If
+   nothing happens when you tap" notice in components/PageNotices.tsx. A page whose JavaScript runs
+   takes the notice away long before then, so only a page whose buttons never came to life shows it.
+   visibility, rather than opacity, keeps it from being read out or tapped while hidden. */
+@keyframes show-late {
+  to {
+    visibility: visible;
+  }
+}
+.show-late {
+  visibility: hidden;
+  animation: show-late 0s linear 8s forwards;
+}

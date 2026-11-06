@@ -77,7 +77,7 @@ it("someone else's list wraps a long item, its details and link, the owner's nam
       { id: '00000000-0000-4000-8000-0000000000c3', name: item, details, url, claim: null },
     ],
   }
-  render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" actions={actions} />)
+  render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
   // From md: up the claim sits in a column as wide as its text. Capped, as the ✓ line is, so a long
   // buyer's name can't take the item's room. (The browser check at 1280px measures it.)
@@ -93,7 +93,7 @@ it('My wish list wraps a long item and its details', () => {
     canClaim: false,
     items: [{ id: ids.item, name: item, details, url }],
   }
-  render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" actions={actions} />)
+  render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
 })
 
@@ -103,6 +103,7 @@ it("Gifts I'm buying wraps a long item, its details and link, and who it's for",
       groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, details, url, note: 'removed' }] }]}
       viewerName={person}
       homeHref="/p/dev-maya"
+      organizerName={person}
       unclaim={actions.unclaim}
     />,
   )

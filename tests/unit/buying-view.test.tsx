@@ -31,7 +31,7 @@ function show(groups: BuyingGroup[] = grandmas, viewerName = 'Grandma') {
   const unclaim = vi.fn<(itemId: string) => Promise<void>>(() => undone.promise)
   const homeHref = `/p/dev-${viewerName.toLowerCase()}`
   const view = (g: BuyingGroup[]) => (
-    <BuyingView groups={g} viewerName={viewerName} homeHref={homeHref} unclaim={unclaim} />
+    <BuyingView groups={g} viewerName={viewerName} homeHref={homeHref} organizerName="Maya" unclaim={unclaim} />
   )
   const rendered = render(view(groups))
   return { unclaim, undone, rerender: (g: BuyingGroup[]) => rendered.rerender(view(g)) }

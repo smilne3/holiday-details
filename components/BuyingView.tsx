@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { useRef, useState } from 'react'
+import { PageNotices } from '@/components/PageNotices'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import { pageIsLeaving } from '@/lib/stale-page'
 import type { BuyingGroup } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
 // it's for, with the link and Undo. getBuying hands over the viewer's own claims and no one else's.
@@ -19,17 +21,21 @@ import type { BuyingGroup } from '@/lib/types'
 // then re-renders the page without it. When a refresh hands over new groups the page follows them,
 // so a gift claimed again in another tab is never left hidden.
 //
+// PageNotices waits at the foot of the page, for a phone where the buttons never come to life.
+//
 // On a phone each card stacks, with Undo under the item. From md: up Undo sits on the right. As on
 // a wish list, typed text is wrap-anywhere, so a long word wraps instead of pushing the page sideways.
 export function BuyingView({
   groups,
   viewerName,
   homeHref,
+  organizerName,
   unclaim,
 }: {
   groups: BuyingGroup[]
   viewerName: string
   homeHref: string
+  organizerName: string | null
   unclaim: (itemId: string) => Promise<void>
 }) {
   const [undone, setUndone] = useState<ReadonlySet<string>>(new Set())
@@ -89,6 +95,7 @@ export function BuyingView({
           </section>
         ))
       )}
+      <PageNotices organizerName={organizerName} />
     </main>
   )
 }
@@ -96,7 +103,7 @@ export function BuyingView({
 // Undo, as on a wish list: one call per tap, even two taps that land before the button redraws as
 // disabled; Saving… while it saves; and a failure that says so and leaves the gift where it is,
 // since the claim is still there. When the page is on its way out (lib/stale-page.ts) it says
-// nothing and stays as Saving… until the page goes. The button is described by the item's name,
+// nothing and stays as Saving… until the page goes. It's disabled until the page's JavaScript runs. The button is described by the item's name,
 // so a screen reader says which gift each Undo is for.
 //
 // The outer element stays put whatever the state, so screen readers announce each change in it.
@@ -112,6 +119,7 @@ function Undo({
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
   const busy = useRef(false)
+  const hydrated = useHydrated()
 
   async function undo() {
     if (busy.current) return
@@ -135,7 +143,7 @@ function Undo({
       <button
         type="button"
         onClick={undo}
-        disabled={saving}
+        disabled={!hydrated || saving}
         aria-describedby={`gift-${itemId}`}
         className="inline-flex min-h-11 items-center px-1 text-sm text-link underline disabled:no-underline disabled:opacity-70"
       >

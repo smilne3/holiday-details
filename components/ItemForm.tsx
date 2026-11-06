@@ -4,6 +4,7 @@ import { startTransition, useActionState, useEffect, useId, useRef, useState, ty
 import { copy } from '@/lib/copy'
 import { pageIsLeaving, restoreDraft } from '@/lib/stale-page'
 import type { Result } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // The add form, and the same three fields for editing an item. `action` is a Server Action with
 // the owner's or the item's id already bound.
@@ -13,6 +14,11 @@ import type { Result } from '@/lib/types'
 // typed so it can be fixed. The fields clear only once the server says the item saved. One save at
 // a time: a second tap or Enter while saving sends nothing, so a slow network can't add an item
 // twice.
+//
+// Before the page's JavaScript runs, the button is disabled, which also stops Enter from sending the
+// form. A form the browser sent itself would go by GET, with what was typed in the address and in
+// the server's logs, so it's method="post": even then nothing typed reaches the address, and with
+// no Server Action named, nothing is saved.
 //
 // When the page is on its way out (lib/stale-page.ts), it says nothing and stays as Saving… until
 // the page goes. The add form passes a draftKey, so what was typed survives a reload after a deploy
@@ -39,6 +45,7 @@ export function ItemForm({
   const formRef = useRef<HTMLFormElement>(null)
   const busy = useRef(false)
   const [leaving, setLeaving] = useState(false)
+  const hydrated = useHydrated()
 
   useEffect(() => {
     if (draftKey) restoreDraft(draftKey, formRef.current)
@@ -82,7 +89,7 @@ export function ItemForm({
   ]
 
   return (
-    <form ref={formRef} onSubmit={submit} className="space-y-3">
+    <form ref={formRef} method="post" onSubmit={submit} className="space-y-3">
       {fields.map(f => (
         <div key={f.name}>
           <label htmlFor={`${id}-${f.name}`} className="block text-sm font-medium text-neutral-700">
@@ -109,7 +116,7 @@ export function ItemForm({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={!hydrated || saving}
           className="min-h-11 w-full rounded-lg bg-accent px-5 py-2 font-semibold text-white wrap-anywhere disabled:opacity-70 md:w-auto"
         >
           {saving ? copy.saving : submitLabel}

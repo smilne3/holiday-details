@@ -4,11 +4,13 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ItemClaim } from '@/components/ItemClaim'
 import { ItemForm } from '@/components/ItemForm'
+import { PageNotices } from '@/components/PageNotices'
 import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import type { ClaimResult, ListItem, ListViewData, OwnListItem, Result } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // The Server Actions in app/list/actions.ts. Tests pass fakes.
 export interface ListActions {
@@ -29,6 +31,9 @@ export interface ListActions {
 // row, with the claim control on the right. Typed text is wrap-anywhere, so a link pasted into
 // "What is it?", with no spaces to break at, wraps instead of pushing the page sideways.
 //
+// Until the page's JavaScript runs, every button is disabled, Edit included, and PageNotices waits
+// at the foot of the page to say what to do if they never come to life.
+//
 // The claim control always sits in the same place in its item, and items are keyed by id, so the
 // ItemClaim that showed a ✓ is the same one after the page refreshes, and keeps its hint.
 //
@@ -39,13 +44,16 @@ export function ListView({
   view,
   viewerName,
   homeHref,
+  organizerName,
   actions,
 }: {
   view: ListViewData
   viewerName: string
   homeHref: string
+  organizerName: string | null
   actions: ListActions
 }) {
+  const hydrated = useHydrated()
   const [editing, setEditing] = useState<string | null>(null)
   const [gone, setGone] = useState<{ id: string; at: number } | null>(null)
   const own = view.mode === 'own'
@@ -158,7 +166,8 @@ export function ListView({
                     <button
                       type="button"
                       onClick={() => setEditing(item.id)}
-                      className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline"
+                      disabled={!hydrated}
+                      className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline disabled:opacity-70"
                     >
                       {copy.edit}
                     </button>
@@ -180,6 +189,7 @@ export function ListView({
           />
         </section>
       )}
+      <PageNotices organizerName={organizerName} />
     </main>
   )
 }

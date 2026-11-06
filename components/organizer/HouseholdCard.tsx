@@ -5,6 +5,7 @@ import { NameForm } from '@/components/organizer/NameForm'
 import { PersonRow, type PersonActions } from '@/components/organizer/PersonRow'
 import { copy } from '@/lib/copy'
 import type { OrganizerData, Result } from '@/lib/types'
+import { useHydrated } from '@/lib/use-hydrated'
 
 // The organizer page's Server Actions (app/organizer/actions.ts). Tests pass fakes.
 export interface OrganizerActions extends PersonActions {
@@ -13,7 +14,8 @@ export interface OrganizerActions extends PersonActions {
 }
 
 // One household on the organizer page: its name with Rename, everyone in it, and a name field with
-// "Add an adult" and "Add a kid".
+// "Add an adult" and "Add a kid". Rename opens its form only once the page's JavaScript runs, so
+// it's disabled until then, like every button on the page.
 export function HouseholdCard({
   household,
   households,
@@ -26,6 +28,7 @@ export function HouseholdCard({
   actions: OrganizerActions
 }) {
   const [renaming, setRenaming] = useState(false)
+  const hydrated = useHydrated()
   const headingId = `household-${household.id}`
 
   return (
@@ -38,7 +41,8 @@ export function HouseholdCard({
           <button
             type="button"
             onClick={() => setRenaming(true)}
-            className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline"
+            disabled={!hydrated}
+            className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline disabled:opacity-70"
           >
             {copy.rename}
           </button>
