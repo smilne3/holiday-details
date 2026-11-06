@@ -43,8 +43,10 @@ it holds data, so check all three before creating anything.
 3. **Database password:** click **Generate a password**. Copy it into a new password-manager entry
    named something like "Supabase holiday-details".
    **Why:** you need it once more, in step 2.12. Supabase won't show it again; it can only reset it.
-4. **Region:** a US West region, such as West US (Oregon) or West US (North California). Note which
-   one you chose.
+4. **Region:** a US region near most of the family. If the form offers only broad choices, such as
+   **Americas**, pick that one and Supabase chooses the exact region. Once the project exists, its
+   card on the organization's **Projects** page shows the region's code, such as `us-east-1`. Note
+   it.
    **Why:** a database near the family keeps pages quick. Vercel's region gets matched to it in step
    3.7.
 5. **Plan:** the form shows your organization's plan. It should say Free.
@@ -70,16 +72,21 @@ it holds data, so check all three before creating anything.
 
 ### Copy the connection string
 
-11. Click **Connect** at the top of the project. Under the connection string, choose **Transaction
-    pooler**, which uses port `6543`, and copy the URI. It looks like
+11. Click **Connect** at the top of the project. The box opens on a **Framework** tab, which is for
+    apps built on Supabase's own client library. This app isn't, so ignore that tab. Click the
+    **Direct** tab (Connection string), choose **Transaction pooler**, which uses port `6543`, and
+    copy the URI. You can't edit it there. Supabase only shows it, with `[YOUR-PASSWORD]` as a blank
+    that you fill in at step 2.12. It looks like
     `postgresql://postgres.<project ref>:[YOUR-PASSWORD]@<pooler host>:6543/postgres`.
     **Why:** Vercel runs the app as many short-lived functions, each opening its own connection. The
     transaction pooler shares a few real connections among them, so the free plan's limit isn't
     reached. Supabase notes that this mode doesn't support prepared statements. The app already turns
     them off (`prepare: false` in `lib/db/postgres.ts`).
-12. Paste the URI into the password-manager entry from step 2.3. Replace `[YOUR-PASSWORD]`, square
-    brackets included, with the database password. The result has no brackets, no spaces and no
-    quotes. It starts `postgresql://`, has `:6543/` near the end, and ends `/postgres`. This finished
+12. Open the password-manager entry from step 2.3, click **Edit**, and paste the URI into its
+    **Notes** field. Copy the entry's password. In the notes, select `[YOUR-PASSWORD]` with its square
+    brackets: click just before the `[`, then Shift-click just after the `]`. A double-click misses
+    the brackets. Paste the password over it, then save the entry. The result has no brackets, no
+    spaces and no quotes. It starts `postgresql://`, has `:6543/` near the end, and ends `/postgres`. This finished
     URI is the value of `DATABASE_URL`.
     If your password contains any of `@ : / ? # [ ] %`, the URI won't work. Reset the password to one
     of letters and digits only (Project Settings → Database), then do this step again.
@@ -110,11 +117,13 @@ it holds data, so check all three before creating anything.
      **Why:** each of the two variables belongs to just one kind of deployment, and step 3.5 is where
      you choose which.
 4. Click **Deploy**. This first production deployment builds `main`, which doesn't have the app yet,
-   so expect it to fail or show an empty page. The app reaches production when you merge in section 5.
+   so expect it to fail with `No Next.js version detected`. The app reaches production when you merge in section 5.
 
 ### Add the two environment variables
 
-5. Open the project's **Settings** → **Environment Variables**, and add this one:
+5. Open the project's **Settings**. If the sidebar lists **Environment Variables**, open it. If it
+   lists **Environments** instead, open that and click the **Production** row; that environment's
+   variables are on its page. Add this one:
    - **Key:** `DATABASE_URL`. Type just the name, with no `=`, quotes or spaces.
    - **Value:** the finished URI from step 2.12, pasted from your password manager.
    - **Environments:** **Production** only. Untick Preview and Development.
@@ -125,7 +134,8 @@ it holds data, so check all three before creating anything.
    whatever branch is pushed, including half-finished work, and none of it can reach the real database.
    **Why Sensitive:** nobody can read the value back from the dashboard, you included. That's why it
    lives in your password manager.
-6. Add a second variable:
+6. Add a second variable. In the **Environments** layout, go back and click the **Preview** row
+   first:
    - **Key:** `DEMO_DATA`.
    - **Value:** `1`.
    - **Environments:** **Preview** only.
@@ -139,8 +149,8 @@ it holds data, so check all three before creating anything.
 ### Check two settings
 
 7. **Settings** → **Functions** → **Function Region.** Choose the region nearest your Supabase region
-   from step 2.4: **Portland, USA (pdx1)** for Oregon, or **San Francisco, USA (sfo1)** for North
-   California. Save.
+   from step 2.4: **Washington, D.C., USA (iad1)** for `us-east-1`, **Portland, USA (pdx1)** for
+   `us-west-2`, or **San Francisco, USA (sfo1)** for `us-west-1`. Save.
    **Why:** each page asks the database a few questions, one after another. If the app runs across
    the country from the database, every question waits for that trip.
 8. **Settings** → **Deployment Protection.** Vercel Authentication should be on, set to **Standard
