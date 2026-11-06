@@ -168,8 +168,11 @@ it holds data, so check all three before creating anything.
 
 ## 4. Look at the preview on your phone
 
-1. On your phone, open the Ready preview deployment from step 3.10 and copy its address. Log in to
-   Vercel when it asks; that's step 3.8 at work.
+1. On your phone, open the Ready preview deployment from step 3.10 and tap **Visit**. Log in to
+   Vercel when it asks; that's step 3.8 at work. Copy the address of the page that opens. It ends in
+   `.vercel.app`.
+   **Why:** the Vercel page you tapped **Visit** on has an address too, but adding `/p/…` to that one
+   leads nowhere.
 2. Add `/p/dev-grandma` to the end of the address. You're now Grandma. Open Leo's list and tap "I'll
    buy this" on something, which should turn green. Then open Gifts I'm buying.
 3. Change the end of the address to `/p/dev-maya`. You're now Maya, the organizer. Check that her own
@@ -183,7 +186,9 @@ it holds data, so check all three before creating anything.
    **Why:** a phone copies differently from a computer, and here a copy that fails costs nothing. If
    it can't copy, the invitation shows in a box for you to select and copy yourself.
 5. Look for anything hard to read, hard to tap, cut off, or scrolling sideways. Tell Claude what you
-   find. Fixes go on the same branch and get a new preview.
+   find. Claude makes each fix in its own pull request into `main`. Once you've merged it, repeat
+   step 3.9 for a new preview and check again. Go on to section 5 only when the preview looks right.
+   **Why:** section 5 builds production from `main`, so a fix that isn't merged yet won't be in it.
 
 A preview keeps its made-up family in the memory of whichever server instance answers, and Vercel can
 run several. Every instance starts with the same family, so every list opens. But a claim or an item
