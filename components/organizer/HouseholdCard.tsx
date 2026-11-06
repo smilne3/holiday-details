@@ -31,7 +31,7 @@ export function HouseholdCard({
   return (
     <section aria-labelledby={headingId} className="rounded-2xl border border-card-line bg-white px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3">
-        <h2 id={headingId} className="text-lg font-bold text-family">
+        <h2 id={headingId} className="min-w-0 text-lg font-bold text-family wrap-anywhere">
           {household.name}
         </h2>
         {!renaming && (

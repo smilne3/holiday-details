@@ -110,7 +110,7 @@ export function ItemForm({
         <button
           type="submit"
           disabled={saving}
-          className="min-h-11 w-full rounded-lg bg-accent px-5 font-semibold text-white disabled:opacity-70 md:w-auto"
+          className="min-h-11 w-full rounded-lg bg-accent px-5 py-2 font-semibold text-white wrap-anywhere disabled:opacity-70 md:w-auto"
         >
           {saving ? copy.saving : submitLabel}
         </button>

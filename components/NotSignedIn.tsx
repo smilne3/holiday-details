@@ -7,7 +7,7 @@ export function NotSignedIn({ organizerName }: { organizerName: string | null })
   const org = organizerName ?? copy.organizerFallback
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
-      <div className="max-w-md rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-neutral-200">
+      <div className="max-w-md min-w-0 rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-neutral-200 wrap-anywhere">
         <p className="text-lg text-neutral-800">{copy.notSignedIn(org)}</p>
         <p className="mt-4 text-sm text-neutral-600">{copy.cantFindEmail(org)}</p>
       </div>

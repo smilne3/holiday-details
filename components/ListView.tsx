@@ -26,7 +26,8 @@ export interface ListActions {
 //   - your kid's list: both of the above
 //
 // On a phone each item stacks, with the button full width under it. From md: up each item is one
-// row, with the claim control on the right.
+// row, with the claim control on the right. Typed text is wrap-anywhere, so a link pasted into
+// "What is it?", with no spaces to break at, wraps instead of pushing the page sideways.
 //
 // The claim control always sits in the same place in its item, and items are keyed by id, so the
 // ItemClaim that showed a ✓ is the same one after the page refreshes, and keeps its hint.
@@ -63,17 +64,17 @@ export function ListView({
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 md:px-8 md:py-6">
       <div className="flex items-center justify-between gap-3">
-        <Link href={homeHref} className="inline-flex min-h-11 items-center text-sm text-link">
+        <Link href={homeHref} className="inline-flex min-h-11 shrink-0 items-center text-sm text-link">
           {copy.allLists}
         </Link>
         <SignedInAs name={viewerName} />
       </div>
 
-      <h1 className="mt-1 text-2xl font-bold text-neutral-900">
+      <h1 className="mt-1 text-2xl font-bold text-neutral-900 wrap-anywhere">
         {own ? copy.myWishList : copy.listTitle(view.owner.name)}
       </h1>
       {/* keptBy arrives already joined ("Ben & Maya"); keptByLine of one name adds only "Kept by". */}
-      {view.keptBy && <p className="mt-1 text-sm text-neutral-600">{copy.keptByLine([view.keptBy])}</p>}
+      {view.keptBy && <p className="mt-1 text-sm text-neutral-600 wrap-anywhere">{copy.keptByLine([view.keptBy])}</p>}
       {own && <p className="mt-3 rounded-xl bg-wish px-3.5 py-2.5 text-sm text-wish-ink">{copy.ownListNote}</p>}
 
       {view.items.length === 0 ? (
@@ -87,7 +88,7 @@ export function ListView({
             return (
               <li
                 key={item.id}
-                className={`rounded-xl border px-3.5 py-3 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4 ${tone}`}
+                className={`rounded-xl border px-3.5 py-3 wrap-anywhere md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4 ${tone}`}
               >
                 <div className="min-w-0 md:col-start-1 md:row-start-1">
                   {editing === item.id ? (

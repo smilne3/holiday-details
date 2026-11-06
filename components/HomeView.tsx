@@ -7,7 +7,8 @@ import type { HomeData } from '@/lib/types'
 // buttons for the viewer's own things, then everyone else, one card per household. Nothing collapses
 // or waits behind a tap. On a phone the two buttons share the row; from md: up they keep a button's
 // width instead of stretching, and the cards sit side by side. The two emoji are the mockup's
-// decoration, hidden from screen readers like the row chevrons; the words all come from copy.
+// decoration, hidden from screen readers like the row chevrons; the words all come from copy. Names
+// are wrap-anywhere, so a long one with no spaces wraps instead of pushing the page sideways.
 export function HomeView({
   viewer,
   home,
@@ -18,7 +19,7 @@ export function HomeView({
   return (
     <main className="mx-auto max-w-5xl px-4 py-4 md:px-8 md:py-6">
       <SignedInAs name={viewer.name} />
-      <h1 className="mt-1 mb-4 text-2xl font-bold text-neutral-900">{copy.hi(viewer.name)}</h1>
+      <h1 className="mt-1 mb-4 text-2xl font-bold text-neutral-900 wrap-anywhere">{copy.hi(viewer.name)}</h1>
 
       <div className="mb-6 flex gap-3">
         <Link
@@ -51,7 +52,10 @@ export function HomeView({
             aria-labelledby={`household-${household.id}`}
             className="rounded-2xl border border-card-line bg-white px-3 py-2"
           >
-            <h3 id={`household-${household.id}`} className="px-1 pt-1 pb-1.5 text-sm font-bold text-neutral-600">
+            <h3
+              id={`household-${household.id}`}
+              className="px-1 pt-1 pb-1.5 text-sm font-bold text-neutral-600 wrap-anywhere"
+            >
               {household.name}
             </h3>
             <ul>
@@ -61,7 +65,7 @@ export function HomeView({
                     href={`/list/${member.id}`}
                     className="flex min-h-11 items-center justify-between gap-2 px-1 text-neutral-900"
                   >
-                    <span>
+                    <span className="min-w-0 wrap-anywhere">
                       {member.name}
                       {member.kind === 'kid' && (
                         <span className="ml-1.5 rounded-lg bg-kid px-1.5 py-px text-xs text-kid-ink">{copy.kid}</span>

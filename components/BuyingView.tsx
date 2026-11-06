@@ -19,7 +19,8 @@ import type { BuyingGroup } from '@/lib/types'
 // then re-renders the page without it. When a refresh hands over new groups the page follows them,
 // so a gift claimed again in another tab is never left hidden.
 //
-// On a phone each card stacks, with Undo under the item. From md: up Undo sits on the right.
+// On a phone each card stacks, with Undo under the item. From md: up Undo sits on the right. As on
+// a wish list, typed text is wrap-anywhere, so a long word wraps instead of pushing the page sideways.
 export function BuyingView({
   groups,
   viewerName,
@@ -47,7 +48,7 @@ export function BuyingView({
   return (
     <main className="mx-auto max-w-2xl px-4 py-4 md:px-8 md:py-6">
       <div className="flex items-center justify-between gap-3">
-        <Link href={homeHref} className="inline-flex min-h-11 items-center text-sm text-link">
+        <Link href={homeHref} className="inline-flex min-h-11 shrink-0 items-center text-sm text-link">
           {copy.allLists}
         </Link>
         <SignedInAs name={viewerName} />
@@ -60,14 +61,14 @@ export function BuyingView({
       ) : (
         left.map(({ recipient, items }) => (
           <section key={recipient.id} aria-labelledby={`for-${recipient.id}`} className="mt-5">
-            <h2 id={`for-${recipient.id}`} className="mb-2 text-lg font-bold text-buying-ink">
+            <h2 id={`for-${recipient.id}`} className="mb-2 text-lg font-bold text-buying-ink wrap-anywhere">
               {copy.forRecipient(recipient.name)}
             </h2>
             <ul className="space-y-2.5">
               {items.map(item => (
                 <li
                   key={item.id}
-                  className="rounded-xl border border-item-line bg-white px-3.5 py-3 md:flex md:items-center md:justify-between md:gap-x-4"
+                  className="rounded-xl border border-item-line bg-white px-3.5 py-3 wrap-anywhere md:flex md:items-center md:justify-between md:gap-x-4"
                 >
                   <div className="min-w-0">
                     <p id={`gift-${item.id}`} className="font-semibold text-neutral-900">

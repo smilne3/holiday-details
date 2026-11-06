@@ -97,7 +97,7 @@ export function PersonRow({
   }
 
   return (
-    <li className="border-t border-row-line py-2">
+    <li className="border-t border-row-line py-2 wrap-anywhere">
       <p className="flex flex-wrap items-center gap-x-1.5 font-semibold text-neutral-900">
         {person.name}
         {person.kind === 'kid' && (

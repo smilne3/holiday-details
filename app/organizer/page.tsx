@@ -42,7 +42,7 @@ export default async function OrganizerPage() {
       <div className="flex items-center justify-between gap-3">
         <Link
           href={`/p/${encodeURIComponent(viewer.token)}`}
-          className="inline-flex min-h-11 items-center text-sm text-link"
+          className="inline-flex min-h-11 shrink-0 items-center text-sm text-link"
         >
           {copy.allLists}
         </Link>
