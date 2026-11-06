@@ -185,8 +185,9 @@ it holds data, so check all three before creating anything.
    find. Fixes go on the same branch and get a new preview.
 
 A preview keeps its made-up family in the memory of whichever server instance answers, and Vercel can
-run several. So a claim can sometimes seem to vanish, or come back, after a reload. That's only the
-demo. Production keeps everything in Supabase.
+run several. Every instance starts with the same family, so every list opens. But a claim or an item
+you add lives only in the instance that saved it. On another page, or after a reload, it can seem to
+vanish or come back. That's only the demo. Production keeps everything in one place, Supabase.
 
 ## 5. Merge
 

@@ -3,7 +3,7 @@ import { createPgliteDb } from '@/lib/db/pglite'
 import type { Db } from '@/lib/db/types'
 
 // One in-memory PGlite per test file, since start-up takes about a second. Open it in beforeAll,
-// call reset() in beforeEach for a fresh family (new ids each time), and close it in afterAll.
+// call reset() in beforeEach for a fresh family (the same fixed ids each time; see db/dev-family.ts), and close it in afterAll.
 export async function testDb(): Promise<{
   db: Db
   family: Family
