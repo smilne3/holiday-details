@@ -3,6 +3,11 @@ import type { Db } from './types'
 
 export function createPostgresDb(url: string): Db {
   const sql = postgres(url, {
+    // Encrypted, because every query carries a personal link's token, which is the whole sign-in, or
+    // the family's names and lists. postgres.js otherwise connects in plain text, and it reads
+    // sslmode only from the URL, which the URI copied from Supabase doesn't have. 'require' encrypts
+    // without checking the server's certificate; checking it would need Supabase's CA certificate.
+    ssl: 'require',
     // Supabase's transaction pooler can run each query on a different server connection, where a
     // named prepared statement from an earlier query would not exist.
     prepare: false,
