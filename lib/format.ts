@@ -9,9 +9,12 @@ export function keptBy(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`
 }
 
-// The shop's domain, shown in place of the full link: "asos.com".
-export function shopName(url: string): string {
-  return new URL(url).hostname.replace(/^www\./, '')
+// The shop's domain, shown in place of the full link: "asos.com". null for a stored link that
+// isn't a web address at all. The app never stores one, but a row typed into Supabase's SQL Editor
+// can hold anything the database's ^https?:// check lets through, such as "https://", and a throw
+// here would take the whole list down for everyone who opens it.
+export function shopName(url: string): string | null {
+  return parse(url)?.hostname.replace(/^www\./, '') || null
 }
 
 // The database refuses a longer link.

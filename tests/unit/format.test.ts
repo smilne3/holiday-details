@@ -19,6 +19,12 @@ it("names a link by the shop's domain, without www.", () => {
   expect(shopName('https://apple.com/shop')).toBe('apple.com')
 })
 
+// The app stores only links that parse, but one typed into Supabase's SQL Editor needn't.
+it("names no shop for a stored link that isn't a web address, rather than throw", () => {
+  expect(shopName('https://')).toBeNull()
+  expect(shopName('https://shop .com')).toBeNull()
+})
+
 it('treats a blank link as no link', () => {
   expect(normalizeLink('  ')).toEqual({ ok: true, url: null })
 })

@@ -63,6 +63,13 @@ it('groups under For Leo, with details and the shop link', () => {
   expect(within(row('Yo-yo')).queryByRole('link')).toBeNull()
 })
 
+it("a stored link that isn't a web address shows no link, and the page still shows", () => {
+  show([{ recipient: leo, items: [{ ...sweater, url: 'https://shop .com' }, yoyo] }])
+  within(row('Sweater')).getByText('Green, size XS')
+  expect(within(row('Sweater')).queryByRole('link')).toBeNull()
+  undoIn('Sweater')
+})
+
 it("notes read Removed from Leo's list and Changed after you claimed it", () => {
   show()
   within(row('Yo-yo')).getByText(copy.removedFrom('Leo'))

@@ -138,6 +138,13 @@ it('a link shows asos.com ↗, opens in a new tab with rel="noopener noreferrer"
   expect(within(row('Yo-yo')).queryByRole('link')).toBeNull()
 })
 
+it.each(['https://', 'https://shop .com'])("a stored link that isn't a web address (%s) shows no link, and the list still shows", url => {
+  show({ ...leoOther, items: leoOther.items.map(i => (i.id === sweater.id ? { ...i, url } : i)) }, 'Grandma')
+  within(row('Sweater')).getByText(copy.isBuying('Priya'))
+  expect(within(row('Sweater')).queryByRole('link')).toBeNull()
+  expect(within(row('AirPods 5')).getByRole('link').textContent).toBe('apple.com ↗')
+})
+
 it("title is Leo's wish list (My wish list for your own); ‹ All lists links to the home href; Signed in as Maya shows", () => {
   show(leoKept)
   screen.getByRole('heading', { level: 1, name: copy.listTitle('Leo') })
