@@ -197,7 +197,7 @@ demo. Production keeps everything in Supabase.
 
 2. Replace `<household name>` with your household's name, the way the family will see it, such as
    `Ben & Maya`. Replace `<your first name>` with yours, such as `Maya`. Keep the single quotes around
-   each one. If a name has an apostrophe in it, type the apostrophe twice: `'O''Brien'`.
+   each one. If a name has an apostrophe in it, type the apostrophe twice: `'Grandma''s house'`.
    **Why:** this makes your household and you in it, as the organizer, with a personal link. Type the
    names here and nowhere else, so they stay out of the repository.
 3. Click **Run**, once. It returns one row with a `token`, a 64-character string of letters and
@@ -220,6 +220,10 @@ demo. Production keeps everything in Supabase.
 
    If you'd rather check everything first, send only your spouse's invitation now. Do section 7, then
    come back and send the rest.
+7. Go back to your home page with **‹ All lists**, open **My wish list**, and add one thing: type it in
+   **What is it?** and click **Add to my wish list**. A real wish is fine.
+   **Why:** section 7 has your spouse claim something on your list, and an empty list has nothing to
+   claim.
 
 ## 7. Check production together
 
@@ -228,9 +232,10 @@ demo. Production keeps everything in Supabase.
    **Why:** this checks that a visitor without a link sees no names or lists. It also checks that
    production isn't behind a Vercel login. If you see a Vercel login, set Deployment Protection back to
    Standard Protection, as in step 3.8.
-2. **Your own list keeps the surprise.** Your spouse opens their link on their own phone and taps
-   "I'll buy this" on one of your items. On your own **My wish list**, nothing changes: nothing is
-   greyed, crossed out, named or counted, and the order stays the same.
+2. **Your own list keeps the surprise.** Your spouse taps the link in their invitation (step 6.6) on
+   their own phone, opens your list, and taps "I'll buy this" on the item you added in step 6.7. On
+   your own **My wish list**, nothing changes: nothing is greyed, crossed out, named or counted, and
+   the order stays the same.
    **Why:** keeping the surprise is the app's main promise, and this checks it against the real
    database.
 3. **Undo the test claim.** Your spouse opens **Gifts I'm buying** and taps **Undo** on that item. It
