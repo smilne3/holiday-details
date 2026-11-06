@@ -22,6 +22,7 @@ afterAll(() => t.close())
 
 const ok = { ok: true }
 const notAllowed = { ok: false, error: copy.notAllowed }
+const gone = { ok: false, error: copy.gone, gone: true }
 const nameRequired = { ok: false, error: copy.nameRequired }
 const tooLong = { ok: false, error: copy.tooLong }
 const badLink = { ok: false, error: copy.badLink }
@@ -349,29 +350,42 @@ it('updateItem: a save that changes nothing leaves updated_at alone', async () =
   expect((await row(sweater)).updated_at.getTime()).toBeGreaterThan(before.getTime())
 })
 
-it("updateItem: someone else's item, a removed item or an unknown id is notAllowed", async () => {
+it("updateItem: someone else's item or an unknown id is notAllowed", async () => {
   // Forged: Ben edits Grandma's item by its id, and so does her spouse; Maya edits another
   // household's kid's item.
   const puzzle = await itemRow(db, f.grandma.id, 'Jigsaw puzzle')
   const drum = await itemRow(db, f.ollie.id, 'Drum')
-  expect(await updateItem(db, f.ben, puzzle, input('Mine now'))).toEqual(notAllowed)
-  expect(await updateItem(db, f.grandpa, puzzle, input('Mine now'))).toEqual(notAllowed)
-  expect(await updateItem(db, f.maya, drum, input('Mine now'))).toEqual(notAllowed)
+  expect(await updateItem(db, f.ben, puzzle, input('Mine now'))).toStrictEqual(notAllowed)
+  expect(await updateItem(db, f.grandpa, puzzle, input('Mine now'))).toStrictEqual(notAllowed)
+  expect(await updateItem(db, f.maya, drum, input('Mine now'))).toStrictEqual(notAllowed)
   expect((await row(puzzle)).name).toBe('Jigsaw puzzle')
   expect((await row(drum)).name).toBe('Drum')
 
-  const feeder = await itemRow(db, f.maya.id, 'Bird feeder')
-  await remove(feeder)
-  expect(await updateItem(db, f.maya, feeder, input('Bird bath'))).toEqual(notAllowed)
-  expect(await updateItem(db, f.maya, feeder, input(''))).toEqual(notAllowed) // not nameRequired
-  expect((await row(feeder)).name).toBe('Bird feeder')
+  // Someone who couldn't edit it hears nothing of its removal either.
+  await remove(puzzle)
+  expect(await updateItem(db, f.ben, puzzle, input('Mine now'))).toStrictEqual(notAllowed)
 
   for (const id of ['not-a-uuid', crypto.randomUUID(), f.maya.id]) {
-    expect(await updateItem(db, f.maya, id, input('Bird bath')), id).toEqual(notAllowed)
+    expect(await updateItem(db, f.maya, id, input('Bird bath')), id).toStrictEqual(notAllowed)
   }
 })
 
-it('an item removed while an edit is saving is refused, and stays as it was', async () => {
+// Ben took Leo's kite off the list while Maya had it open to edit. She can still change Leo's list,
+// so "You can't change this list" would be wrong: the item is gone.
+it('updateItem: an item taken off the list since the page loaded is gone, for anyone who could edit it', async () => {
+  const kite = await itemRow(db, f.leo.id, 'Kite')
+  await removeItem(db, f.ben, kite)
+  expect(await updateItem(db, f.maya, kite, input('Box kite'))).toStrictEqual(gone)
+  expect(await updateItem(db, f.maya, kite, input(''))).toStrictEqual(gone) // not nameRequired
+  expect((await row(kite)).name).toBe('Kite')
+
+  const feeder = await itemRow(db, f.maya.id, 'Bird feeder')
+  await remove(feeder)
+  expect(await updateItem(db, f.maya, feeder, input('Bird bath'))).toStrictEqual(gone)
+  expect((await row(feeder)).name).toBe('Bird feeder')
+})
+
+it('an item removed while an edit is saving is gone, and stays as it was', async () => {
   const kite = await itemRow(db, f.leo.id, 'Kite')
   // Ben removes it after Maya's edit has passed its checks, just before her save.
   const racing: Db = {
@@ -380,7 +394,7 @@ it('an item removed while an edit is saving is refused, and stays as it was', as
       return db.query<T>(text, params)
     },
   }
-  expect(await updateItem(racing, f.maya, kite, input('Box kite'))).toEqual(notAllowed)
+  expect(await updateItem(racing, f.maya, kite, input('Box kite'))).toStrictEqual(gone)
   const after = await row(kite)
   expect(after.name).toBe('Kite')
   expect(after.removed_at).toBeInstanceOf(Date)
@@ -429,6 +443,6 @@ it("the owner's edits and removals answer the same whether or not the item is cl
   for (const id of [claimed, open]) {
     expect(await updateItem(db, f.maya, id, input('Something else'))).toStrictEqual(ok)
     expect(await removeItem(db, f.maya, id)).toStrictEqual(ok)
-    expect(await updateItem(db, f.maya, id, input('Again'))).toStrictEqual(notAllowed)
+    expect(await updateItem(db, f.maya, id, input('Again'))).toStrictEqual(gone)
   }
 })

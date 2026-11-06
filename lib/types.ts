@@ -33,8 +33,9 @@ export interface OrganizerData {
   }[]
 }
 
-// What a write answers: done, or the message to show.
-export type Result = { ok: true } | { ok: false; error: string }
+// What a write answers: done, or the message to show. gone marks the one refusal that should still
+// refresh the page: the item was taken off the list since the page loaded, so it leaves the page.
+export type Result = { ok: true } | { ok: false; error: string; gone?: true }
 
 // The add and edit form's three fields, as typed.
 export interface ItemInput {

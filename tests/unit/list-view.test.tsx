@@ -203,6 +203,35 @@ it("Edit opens the item's form, filled in; Save sends its id; the form closes on
   within(row('Gardening gloves')).getByRole('button', { name: copy.edit })
 })
 
+it('an edit to an item taken off the list elsewhere says so in its place, and the refresh takes the item away', async () => {
+  const actions = fakeActions()
+  actions.update.mockResolvedValueOnce({ ok: false, error: copy.gone, gone: true })
+  const { rerender } = show(leoKept, 'Maya', actions)
+  fireEvent.click(within(row('Sweater')).getByRole('button', { name: copy.edit }))
+  fireEvent.change(screen.getByDisplayValue('Sweater'), { target: { value: 'Red sweater' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.save }))
+  await act(async () => {})
+  expect(actions.update).toHaveBeenCalledWith(sweater.id, null, expect.any(FormData))
+  expect(screen.queryByRole('button', { name: copy.save })).toBeNull()
+  const cards = () => screen.getAllByRole('listitem').map(li => li.firstElementChild?.textContent)
+  expect(cards()[1]).toBe(copy.gone)
+  expect(screen.queryByText(copy.notAllowed)).toBeNull()
+
+  // The action's refresh hands over the list without it, and the note stays where it was.
+  rerender(
+    <ListView
+      view={{ ...leoKept, items: leoKept.items.filter(i => i.id !== sweater.id) }}
+      viewerName="Maya"
+      homeHref="/p/dev-maya"
+      actions={actions}
+    />,
+  )
+  expect(screen.queryByText('Sweater')).toBeNull()
+  expect(screen.getAllByRole('listitem')).toHaveLength(4)
+  expect(cards()[1]).toBe(copy.gone)
+  within(row('AirPods 5')).getByRole('button', { name: copy.edit })
+})
+
 it('Cancel closes the edit form without saving', () => {
   const { actions } = show(mayaOwn)
   fireEvent.click(within(row('Bird feeder')).getByRole('button', { name: copy.edit }))

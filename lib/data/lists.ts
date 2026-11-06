@@ -50,13 +50,15 @@ export async function addItem(db: Db, viewer: Viewer, ownerId: string, input: It
 }
 
 // Saves an edit. The permission check is against the item's owner as stored, never one the
-// request names. A removed item can't be edited.
+// request names. A removed item can't be edited: someone who could edit it hears it's gone (a
+// spouse took it off a kid's list while this page was open), and anyone else that they can't.
 //
 // updated_at moves only when something changed: Gifts I'm buying marks an item changed after its
 // claim by comparing it, and a save that changed nothing would tell the buyer otherwise.
 export async function updateItem(db: Db, viewer: Viewer, itemId: string, input: ItemInput): Promise<Result> {
   const found = await findItem(db, itemId)
-  if (!found || found.removed || !canEdit(viewer, found.owner)) return refused(copy.notAllowed)
+  if (!found || !canEdit(viewer, found.owner)) return refused(copy.notAllowed)
+  if (found.removed) return gone()
   const item = checkInput(input)
   if (!item.ok) return item
   const rows = await db.query(
@@ -69,11 +71,12 @@ export async function updateItem(db: Db, viewer: Viewer, itemId: string, input: 
     [itemId, item.name, item.details, item.url],
   )
   // No row: it was removed since the check above.
-  return rows.length > 0 ? { ok: true } : refused(copy.notAllowed)
+  return rows.length > 0 ? { ok: true } : gone()
 }
 
 // Takes an item off the list. Any claim on it stays, so the buyer's Gifts I'm buying can say it
-// was removed. Removing it again (a second tap) is still done, and keeps the first time.
+// was removed. Removing it again (a second tap, or after someone else did) is still done, and keeps
+// the first time.
 export async function removeItem(db: Db, viewer: Viewer, itemId: string): Promise<Result> {
   const found = await findItem(db, itemId)
   if (!found || !canEdit(viewer, found.owner)) return refused(copy.notAllowed)
@@ -83,6 +86,11 @@ export async function removeItem(db: Db, viewer: Viewer, itemId: string): Promis
 
 function refused(error: string): { ok: false; error: string } {
   return { ok: false, error }
+}
+
+// The item was taken off the list since the page loaded. The action refreshes, so it leaves the page.
+function gone(): Result {
+  return { ok: false, error: copy.gone, gone: true }
 }
 
 type PersonRow = { id: string; name: string; kind: PersonKind; household_id: string }

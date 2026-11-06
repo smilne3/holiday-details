@@ -196,3 +196,15 @@ it('updateItemAction and removeItemAction go through the permission rules, by th
   expect(await itemNames(f.leo.id)).toEqual([])
   expect(refresh).toHaveBeenCalledTimes(2)
 })
+
+it('an edit to an item taken off the list since the page loaded says so, and refreshes so it leaves the page', async () => {
+  const kite = await itemRow(t.db, f.leo.id, 'Kite')
+  await t.db.query('update items set removed_at = now() where id = $1', [kite])
+  as('dev-maya')
+  expect(await updateItemAction(kite, null, form({ name: 'Red kite', details: '', link: '' }))).toStrictEqual({
+    ok: false,
+    error: copy.gone,
+    gone: true,
+  })
+  expect(refresh).toHaveBeenCalledOnce()
+})

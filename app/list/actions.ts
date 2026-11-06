@@ -16,7 +16,8 @@ import type { ClaimResult, ItemInput, Result } from '@/lib/types'
 // shows what the database now holds. A write that went nowhere doesn't refresh: the control that
 // made it is showing why, and a re-render could take that control off the page before it's read
 // (a claim someone else got first turns the item into "Priya is buying this", with no room for
-// "Someone just took this one.").
+// "Someone just took this one."). The exception is an edit to an item someone took off the list
+// meanwhile: it refreshes, so the item leaves the page, and ListView says so where it was.
 //
 // Signed out (no cookie, or a link the organizer replaced), every action sends the browser to /,
 // which says to tap the link in the email. "Try again" couldn't work, and that page says what will.
@@ -58,7 +59,7 @@ export async function removeItemAction(itemId: string): Promise<Result> {
 }
 
 function refreshed(result: Result): Result {
-  if (result.ok) refresh()
+  if (result.ok || result.gone) refresh()
   return result
 }
 

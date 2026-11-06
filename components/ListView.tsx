@@ -31,6 +31,10 @@ export interface ListActions {
 //
 // The claim control always sits in the same place in its item, and items are keyed by id, so the
 // ItemClaim that showed a ✓ is the same one after the page refreshes, and keeps its hint.
+//
+// An edit saved to an item someone else took off the list meanwhile (a spouse, on a kid's list)
+// answers gone, and the action's refresh takes the item away. Its card then says so, in the place
+// it had, for as long as this page is open, so the item doesn't just vanish.
 export function ListView({
   view,
   viewerName,
@@ -43,7 +47,24 @@ export function ListView({
   actions: ListActions
 }) {
   const [editing, setEditing] = useState<string | null>(null)
+  const [gone, setGone] = useState<{ id: string; at: number } | null>(null)
   const own = view.mode === 'own'
+
+  // The items, with the one whose edit found it gone shown as a note in its place, whether or not
+  // the refresh has taken it out of view.items yet.
+  const rows: (ListItem | { goneId: string })[] = view.items.filter(item => item.id !== gone?.id)
+  if (gone) rows.splice(Math.min(gone.at, rows.length), 0, { goneId: gone.id })
+
+  function update(item: ListItem, at: number) {
+    return async (prev: Result | null, form: FormData): Promise<Result> => {
+      const result = await actions.update(item.id, prev, form)
+      if (!result.ok && result.gone) {
+        setEditing(null)
+        setGone({ id: item.id, at })
+      }
+      return result
+    }
+  }
 
   function claimArea(item: ListItem) {
     if (item.claim && !item.claim.mine) {
@@ -82,11 +103,18 @@ export function ListView({
       {view.keptBy && <p className="mt-1 text-sm text-neutral-600 wrap-anywhere">{copy.keptByLine([view.keptBy])}</p>}
       {own && <p className="mt-3 rounded-xl bg-wish px-3.5 py-2.5 text-sm text-wish-ink">{copy.ownListNote}</p>}
 
-      {view.items.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="mt-5 text-neutral-600">{copy.listEmpty}</p>
       ) : (
         <ul className="mt-4 space-y-2.5">
-          {view.items.map(item => {
+          {rows.map((item, at) => {
+            if ('goneId' in item) {
+              return (
+                <li key={item.goneId} className="rounded-xl border border-item-line bg-taken px-3.5 py-3">
+                  <p className="text-sm font-semibold text-neutral-700">{copy.gone}</p>
+                </li>
+              )
+            }
             const mine = item.claim?.mine === true
             const taken = item.claim != null && !item.claim.mine
             const tone = mine ? 'border-mine-line bg-mine' : taken ? 'border-item-line bg-taken' : 'border-item-line bg-white'
@@ -98,7 +126,7 @@ export function ListView({
                 <div className="min-w-0 md:col-start-1 md:row-start-1">
                   {editing === item.id ? (
                     <ItemForm
-                      action={actions.update.bind(null, item.id)}
+                      action={update(item, at)}
                       submitLabel={copy.save}
                       initial={{ name: item.name, details: item.details ?? '', link: item.url ?? '' }}
                       onSaved={() => setEditing(null)}
