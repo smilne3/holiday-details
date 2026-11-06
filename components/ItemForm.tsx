@@ -21,8 +21,11 @@ import { useHydrated } from '@/lib/use-hydrated'
 // no Server Action named, nothing is saved.
 //
 // When the page is on its way out (lib/stale-page.ts), it says nothing and stays as Saving… until
-// the page goes. The add form passes a draftKey, so what was typed survives a reload after a deploy
-// and is put back as the form mounts. The edit form passes none, and reloads without its edit.
+// the page goes. The add form passes a draftKey, so what was typed survives the reload that follows
+// a deploy which changed the actions' ids, and is put back as the form mounts. The edit form passes
+// none, and reloads without its edit. Most deploys keep the ids, and then this form's save reaches
+// the new code as it is: a field added since the page loaded is left as it was (updateItem in
+// lib/data/lists.ts).
 //
 // The inputs are 16px (text-base) so a phone doesn't zoom in on them, and the link field is plain
 // text: the browser's own url check would refuse "amazon.com/…", which the server accepts. The price
