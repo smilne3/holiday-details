@@ -9,6 +9,7 @@ import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
+import { shownPrice } from '@/lib/format'
 import type { ClaimResult, ListItem, ListViewData, OwnListItem, Result } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
@@ -26,6 +27,9 @@ export interface ListActions {
 //     struck through, reading "Priya is buying this"
 //   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind
 //   - your kid's list: both of the above
+//
+// Each item reads top to bottom: its name, then its price on a line of its own, then its details and
+// its shop's link. A price is shown as typed, except that a bare number gets a $ (lib/format.ts).
 //
 // On a phone each item stacks, with the button full width under it. From md: up each item is one
 // row, with the claim control on the right. Typed text is wrap-anywhere, so a link pasted into
@@ -152,6 +156,11 @@ export function ListView({
                       <p className={`font-semibold ${taken ? 'text-neutral-500' : 'text-neutral-900'}`}>
                         {taken ? <s>{item.name}</s> : item.name}
                       </p>
+                      {item.price && (
+                        <p className={`mt-0.5 text-sm ${taken ? 'text-neutral-500' : 'text-neutral-600'}`}>
+                          {shownPrice(item.price)}
+                        </p>
+                      )}
                       {item.details && (
                         <p className={`mt-0.5 text-sm ${taken ? 'text-neutral-500' : 'text-neutral-600'}`}>
                           {item.details}
