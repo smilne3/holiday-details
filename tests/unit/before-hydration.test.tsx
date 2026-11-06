@@ -15,7 +15,8 @@ import type { ListViewData } from '@/lib/types'
 // Before the page's JavaScript runs, and on a phone too old to run it at all, the server's HTML is
 // all there is. A tap on a button then does nothing, and a form would be sent by the browser itself,
 // by GET, with what was typed in the address. So in that HTML:
-//   - every button is disabled, which also stops Enter from sending a form
+//   - every button is disabled, which in current browsers also stops Enter from sending a form
+//     (Safari 16.3 and older still sends a one-field form: #14)
 //   - every form is method="post", so even a form the browser sends puts nothing in the address
 //   - a notice says what to do if nothing happens, hidden until CSS alone shows it after about 8s
 // and hydration undoes all three.

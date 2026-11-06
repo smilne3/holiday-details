@@ -183,13 +183,13 @@ getting" as presents she'll receive.
   version's own docs (`node_modules/next/dist/docs/`) before writing code; recent versions have
   breaking changes.
 - **Accounts (owner-decided):** use the owner's *personal* GitHub (`smilne3`), Vercel and Supabase
-  accounts, never a work or university account. Before creating any project, show the owner which
+  accounts, never a work account. Before creating any project, show the owner which
   account each tool is signed into and wait for the OK.
 - **The repo is public.** No real family names, emails, list contents or links go into code, tests,
   seed data, docs, commits, issues or PR descriptions. Use made-up names everywhere. Real family data
   lives only in the Supabase database. Personal-link tokens and secrets are never committed.
 - **Commit email:** the repo is configured to commit with the owner's GitHub noreply address. Pushes
-  using the university address are declined.
+  that would expose a private email address are declined.
 - **Timeline:** usable by about 2026-11-12, then in use through 2026-12-25.
 - **Devices:** phones and computers carry equal weight. Check both layouts in real browsers, and check
   on a real phone before calling it done.
