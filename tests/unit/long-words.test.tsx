@@ -79,6 +79,9 @@ it("someone else's list wraps a long item, its details and link, the owner's nam
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" actions={actions} />)
   expect(unwrapped()).toEqual([])
+  // From md: up the claim sits in a column as wide as its text. Capped, as the ✓ line is, so a long
+  // buyer's name can't take the item's room. (The browser check at 1280px measures it.)
+  expect(screen.getByText(copy.isBuying(person)).className).toContain('md:max-w-60')
 })
 
 it('My wish list wraps a long item and its details', () => {

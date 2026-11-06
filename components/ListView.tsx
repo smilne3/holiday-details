@@ -47,7 +47,12 @@ export function ListView({
 
   function claimArea(item: ListItem) {
     if (item.claim && !item.claim.mine) {
-      return <p className="mt-2 text-sm font-semibold text-neutral-600 md:mt-0">{copy.isBuying(item.claim.buyerName)}</p>
+      // Capped from md: up, as ItemClaim's ✓ line is, so a long name can't take the item's room.
+      return (
+        <p className="mt-2 text-sm font-semibold text-neutral-600 md:mt-0 md:max-w-60">
+          {copy.isBuying(item.claim.buyerName)}
+        </p>
+      )
     }
     if (!view.canClaim) return null
     return (
