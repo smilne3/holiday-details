@@ -122,20 +122,34 @@ it('the dev family is three households, six adults, three kids, and Maya is the 
   ])
 })
 
+// Leo's list shows each way a price can look: a bare number (shown as "$179"), one typed with a $,
+// one in words, and none. Maya's own list has one, so the organizer sees a price on her own list.
 it("the dev items: four on Leo's list, two of them claimed, and two on every adult's list", async () => {
   await seedDevItems(db, f)
   expect(
     await db.query(
-      `select i.name, i.details, i.url, b.name as buyer
+      `select i.name, i.price, i.details, i.url, b.name as buyer
          from items i left join claims c on c.item_id = i.id left join people b on b.id = c.buyer_id
         where i.owner_id = $1 order by i.name`,
       [f.leo.id],
     ),
   ).toEqual([
-    { name: 'AirPods 5', details: null, url: 'https://www.apple.com/shop/buy-airpods/airpods-5', buyer: null },
-    { name: 'Any LEGO set', details: 'He likes the space ones', url: null, buyer: null },
-    { name: 'Sweater', details: 'Green, size XS', url: 'https://www.asos.com/', buyer: 'Priya' },
-    { name: 'Yo-yo', details: null, url: null, buyer: 'Grandma' },
+    {
+      name: 'AirPods 5',
+      price: '179',
+      details: null,
+      url: 'https://www.apple.com/shop/buy-airpods/airpods-5',
+      buyer: null,
+    },
+    { name: 'Any LEGO set', price: 'about $25', details: 'He likes the space ones', url: null, buyer: null },
+    { name: 'Sweater', price: '$30', details: 'Green, size XS', url: 'https://www.asos.com/', buyer: 'Priya' },
+    { name: 'Yo-yo', price: null, details: null, url: null, buyer: 'Grandma' },
+  ])
+  expect(
+    await db.query('select name, price from items where owner_id = $1 order by name', [f.maya.id]),
+  ).toEqual([
+    { name: 'Bird feeder', price: null },
+    { name: 'Gardening gloves', price: '$15-20' },
   ])
   expect(
     await db.query(

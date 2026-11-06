@@ -41,20 +41,27 @@ export async function seedDevFamily(db: Db): Promise<Family> {
 // Leo's list is the one in the mockups. Everyone else gets two things, so no list starts empty and a
 // preview shows every kind of list with something on it. Ivy's and Ollie's come last, so adding them
 // moved no one else's ids.
+//
+// A few items have a made-up price, one of each kind: a bare number ("179", shown as "$179"), one
+// typed with a $, and one in words. Maya's gloves have one, so the organizer's own list shows a price
+// too. Prices go through the same item() as everything else, so no id moves.
 export async function seedDevItems(db: Db, f: Family): Promise<void> {
   const iid = fixedIds(3)
-  const item = (owner: Person, name: string, extra?: { details?: string; url?: string }) =>
-    addItem(db, iid(), owner, name, extra)
-  await item(f.leo, 'AirPods 5', { url: 'https://www.apple.com/shop/buy-airpods/airpods-5' })
-  const sweater = await item(f.leo, 'Sweater', { details: 'Green, size XS', url: 'https://www.asos.com/' })
+  const item = (owner: Person, name: string, extra?: ItemExtra) => addItem(db, iid(), owner, name, extra)
+  await item(f.leo, 'AirPods 5', { price: '179', url: 'https://www.apple.com/shop/buy-airpods/airpods-5' })
+  const sweater = await item(f.leo, 'Sweater', {
+    price: '$30',
+    details: 'Green, size XS',
+    url: 'https://www.asos.com/',
+  })
   await claim(db, sweater, f.priya)
   const yoyo = await item(f.leo, 'Yo-yo')
   await claim(db, yoyo, f.grandma)
-  await item(f.leo, 'Any LEGO set', { details: 'He likes the space ones' })
+  await item(f.leo, 'Any LEGO set', { price: 'about $25', details: 'He likes the space ones' })
 
   await item(f.ben, 'Hiking socks', { details: 'Wool, size L' })
   await item(f.ben, 'Coffee grinder')
-  await item(f.maya, 'Gardening gloves', { details: 'Size M' })
+  await item(f.maya, 'Gardening gloves', { price: '$15-20', details: 'Size M' })
   await item(f.maya, 'Bird feeder')
   await item(f.sam, 'Board game', { details: 'Something for four players' })
   await item(f.sam, 'Travel mug')
@@ -103,20 +110,13 @@ async function kid(db: Db, id: string, householdId: string, name: string): Promi
   return { id, name, kind: 'kid', householdId }
 }
 
-async function addItem(
-  db: Db,
-  id: string,
-  owner: Person,
-  name: string,
-  extra: { details?: string; url?: string } = {},
-): Promise<string> {
-  await db.query('insert into items (id, owner_id, name, details, url) values ($1, $2, $3, $4, $5)', [
-    id,
-    owner.id,
-    name,
-    extra.details ?? null,
-    extra.url ?? null,
-  ])
+type ItemExtra = { price?: string; details?: string; url?: string }
+
+async function addItem(db: Db, id: string, owner: Person, name: string, extra: ItemExtra = {}): Promise<string> {
+  await db.query(
+    'insert into items (id, owner_id, name, details, url, price) values ($1, $2, $3, $4, $5, $6)',
+    [id, owner.id, name, extra.details ?? null, extra.url ?? null, extra.price ?? null],
+  )
   return id
 }
 
