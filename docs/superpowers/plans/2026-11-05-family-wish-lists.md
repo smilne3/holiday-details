@@ -1,5 +1,7 @@
 # Family Wish Lists Implementation Plan
 
+> **Historical:** this is the plan the app was built from. The code and `docs/go-live.md` supersede it where they differ.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A small web app where a family keeps its holiday wish lists in one place and taps "I'll buy this" on items. Everyone except the list's owner sees what's taken.
@@ -14,13 +16,12 @@
 
 ## Global Constraints
 
-- **Run every `npm`/`npx`/`node` command as `env -u TYPESAFE_API_KEY <command>`.** The shell exports a real secret. Never print the environment.
-- **Never run `npm install` in `~/every-dollar-counts`.** Read config files from it only.
-- **One committing agent per checkout.** Work in a worktree under the session scratchpad (`<scratchpad>/wt-wish-lists`), not the home folder, on branch `feat/wish-lists` created from `design/family-wish-lists`. Worktrees in the home folder vanished on 2026-11-05.
+- **Never print the environment.**
+- **One committing agent per checkout.** Work in a worktree of its own, on branch `feat/wish-lists` created from `design/family-wish-lists`.
 - **Commit and push as soon as a task's tests pass**, before long steps such as builds or reviews (`git push -u origin feat/wish-lists` the first time). Uncommitted work in a worktree exists nowhere else.
 - **Commits use the repo's configured noreply email.** End every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - **The repo is public.** Use only made-up names: the dev family in Task 2 (Ben, Maya, Leo, Ivy, Sam, Priya, Ollie, Grandma, Grandpa). No real names, emails, list contents, links or tokens anywhere in the repo, in issues or in PRs.
-- **Exact versions:** next 16.4.5, eslint-config-next 16.4.5, react/react-dom 19.3.1, postgres 3.4.9, @electric-sql/pglite 0.5.12, vitest 4.1.12. Other dev tooling uses the budgeting app's ranges (`~/every-dollar-counts/package.json`). Node 24 in CI and `.nvmrc`; `"engines": { "node": ">=22" }`.
+- **Exact versions:** next 16.4.5, eslint-config-next 16.4.5, react/react-dom 19.3.1, postgres 3.4.9, @electric-sql/pglite 0.5.12, vitest 4.1.12. Other dev tooling uses the version ranges of the owner's other Next.js app. Node 24 in CI and `.nvmrc`; `"engines": { "node": ">=22" }`.
 - **Read the installed Next docs** in `node_modules/next/dist/docs/` before using any Next API. Next 16 calls middleware `proxy.ts`, `cookies()` is async, page `params` is a Promise, and `refresh()` (from `next/cache`) re-renders after a Server Action.
 - **User-facing text comes only from `lib/copy.ts`** (Task 3), and its values are exactly as listed there. The word "getting" never appears in `app/`, `components/` or `lib/`, comments included.
 - **Claim data for the viewer's own list never leaves the server.** It isn't selected and isn't in any props.
@@ -82,7 +83,7 @@ tests/unit/**                    all tests (node env for db tests, jsdom for com
 **Interfaces:**
 - Produces: `npm test`, `npm run lint`, `npm run build`; the `@/*` path alias; test environment `jsdom` by default, with `// @vitest-environment node` at the top of DB tests.
 
-- [ ] **Step 1: Write the config.** Copy `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.npmrc` and `tests/stubs/empty.ts` verbatim from `~/every-dollar-counts`. Base `vitest.config.mts` on its config, dropping the `PLAID_ENV`/`TZ` env and keeping the `server-only` alias and the Node 25 `execArgv`. Base `.github/dependabot.yml` on its version, keeping its pinned-action comment convention. `.nvmrc` holds `24`.
+- [ ] **Step 1: Write the config.** Copy `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.npmrc` and `tests/stubs/empty.ts` verbatim from the owner's other Next.js app. Base `vitest.config.mts` on its config, dropping the `PLAID_ENV`/`TZ` env and keeping the `server-only` alias and the Node 25 `execArgv`. Base `.github/dependabot.yml` on its version, keeping its pinned-action comment convention. `.nvmrc` holds `24`.
 - [ ] **Step 2: Write `package.json`** with the versions from Global Constraints. Scripts: `dev`, `build`, `start`, `lint` (`eslint`) and `test` (`vitest`). Dependencies: `next`, `react`, `react-dom`, `postgres`, `@electric-sql/pglite`, `server-only`. PGlite is a runtime dependency because preview demo mode loads it.
 - [ ] **Step 3: Replace `.gitignore`** with GitHub's Node template plus `.next/`, `.vercel/`, `.env*.local`, `.pglite/`, `.DS_Store` and the existing `.superpowers/` lines.
 - [ ] **Step 4: Write the failing test** `tests/unit/invariants.test.ts`:
@@ -101,10 +102,10 @@ it('lays out with md: or wider, never sm:', () => {
 ```
 
 `filesUnder` walks `.ts`/`.tsx` files and returns `[]` for paths that don't exist yet. To see the third test fail, temporarily add `sm:hidden` to the placeholder `app/page.tsx` and run it, then take the class out.
-- [ ] **Step 5: Install and fix the lockfile.** Run `env -u TYPESAFE_API_KEY npm install`, then `env -u TYPESAFE_API_KEY npx -y npm@10 install --package-lock-only`. Npm 11 on this Mac drops the `"libc"` fields from `@next/swc-linux-*`, and npm 10 keeps them. Expected: `grep -c '"libc"' package-lock.json` ≥ 2. Then run `env -u TYPESAFE_API_KEY npm audit signatures`. Expected: all verified.
+- [ ] **Step 5: Install and fix the lockfile.** Run `npm install`, then `npx -y npm@10 install --package-lock-only`. Npm 11 can drop the `"libc"` fields from `@next/swc-linux-*`, and npm 10 keeps them. Expected: `grep -c '"libc"' package-lock.json` ≥ 2. Then run `npm audit signatures`. Expected: all verified.
 - [ ] **Step 6: Write `app/layout.tsx`** (`<html lang="en">`, metadata title `Family Wish Lists`, body background `#fffdf8`) and `app/globals.css` (`@import "tailwindcss";`, plus the mockup colours as CSS variables: accent `#b8452f`, wish-list blue `#eaf1fb`/`#1f4f8f`, buying `#fbe9e4`/`#8a2f1d`, family green `#2f5a24`).
-- [ ] **Step 7: Write `.github/workflows/ci.yml`.** Copy `~/every-dollar-counts/.github/workflows/ci.yml`, keeping its commit-pinned `actions/checkout` and `actions/setup-node` lines. Use `node-version: 24` and no `env:` block. The steps are `npm ci`, `npx tsc --noEmit`, `npm run lint`, `npx vitest run` and `npm run build`.
-- [ ] **Step 8: Verify.** Run `env -u TYPESAFE_API_KEY npx tsc --noEmit && env -u TYPESAFE_API_KEY npm run lint && env -u TYPESAFE_API_KEY npx vitest run && env -u TYPESAFE_API_KEY npm run build`. Expected: all pass.
+- [ ] **Step 7: Write `.github/workflows/ci.yml`.** Copy the owner's other Next.js app's `.github/workflows/ci.yml`, keeping its commit-pinned `actions/checkout` and `actions/setup-node` lines. Use `node-version: 24` and no `env:` block. The steps are `npm ci`, `npx tsc --noEmit`, `npm run lint`, `npx vitest run` and `npm run build`.
+- [ ] **Step 8: Verify.** Run `npx tsc --noEmit && npm run lint && npx vitest run && npm run build`. Expected: all pass.
 - [ ] **Step 9: Commit.** Message: `Scaffold Next 16 app, CI and repo checks`.
 
 ### Task 2: Database schema, adapters and the dev family
@@ -190,7 +191,7 @@ expect(chooseDbMode({ NODE_ENV: 'production', DEMO_DATA: '1' })).toBe('demo')
 expect(() => chooseDbMode({ NODE_ENV: 'production' })).toThrow(/DATABASE_URL/)
 ```
 
-- [ ] **Step 3: Run them and confirm they fail.** Run `env -u TYPESAFE_API_KEY npx vitest run tests/unit/db`. Expected: FAIL, because the modules don't exist yet.
+- [ ] **Step 3: Run them and confirm they fail.** Run `npx vitest run tests/unit/db`. Expected: FAIL, because the modules don't exist yet.
 - [ ] **Step 4: Implement the modules.**
   - `createPostgresDb` uses `postgres(url, { prepare: false, max: 5, connect_timeout: 10, idle_timeout: 20 })`. `prepare: false` is required by Supabase's transaction pooler. `query` maps to `sql.unsafe(text, params)`.
   - `createPgliteDb` opens `new PGlite(dataDir)` and runs every `db/migrations/*.sql` file in name order, read from `path.join(process.cwd(), 'db/migrations')`. `query` maps to `(await pg.query(text, params)).rows`.
@@ -198,7 +199,7 @@ expect(() => chooseDbMode({ NODE_ENV: 'production' })).toThrow(/DATABASE_URL/)
   - `seedDevFamily` creates the households `Ben & Maya` (Ben, Maya, Leo, Ivy), `Sam & Priya` (Sam, Priya, Ollie) and `Grandma & Grandpa`. Adult tokens are `dev-<lowercase name>`, and Maya is the organizer.
   - `seedDevItems` adds the mockup items to Leo's list: AirPods 5 (`https://www.apple.com/shop/buy-airpods/airpods-5`); Sweater with details `Green, size XS` (`https://www.asos.com/`), claimed by Priya; Yo-yo, claimed by Grandma; Any LEGO set with details `He likes the space ones`. It also adds two items to each adult's list.
   - `next.config.ts` sets `serverExternalPackages: ['@electric-sql/pglite']` and `outputFileTracingIncludes: { '/**': ['./db/migrations/*.sql'] }`.
-- [ ] **Step 5: Run them and confirm they pass.** Run `env -u TYPESAFE_API_KEY npx vitest run tests/unit/db`. Expected: PASS.
+- [ ] **Step 5: Run them and confirm they pass.** Run `npx vitest run tests/unit/db`. Expected: PASS.
 - [ ] **Step 6: Commit.** Message: `Schema, Db adapters (postgres.js, PGlite) and a made-up dev family`.
 
 ### Task 3: Rules, formatting and copy
@@ -273,8 +274,8 @@ for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'not a link', 'ht
   expect(normalizeLink(bad)).toEqual({ ok: false })
 ```
 
-`possessive` adds `'s` to every name. That's the spec's "James's".
-- [ ] **Step 2: Run them and confirm they fail.** Run `env -u TYPESAFE_API_KEY npx vitest run tests/unit/rules.test.ts tests/unit/format.test.ts`. Expected: FAIL.
+`possessive` adds `'s` to every name, so "James" reads "James's" (Review Focus 5).
+- [ ] **Step 2: Run them and confirm they fail.** Run `npx vitest run tests/unit/rules.test.ts tests/unit/format.test.ts`. Expected: FAIL.
 - [ ] **Step 3: Implement** `lib/rules.ts`, `lib/format.ts` and `lib/copy.ts`. In `normalizeLink`, trim the input and return `{ok:true,url:null}` if it's empty. Try `new URL(s)` and accept only `http:`/`https:`. Otherwise try `new URL('https://' + s)` and accept it if there are no spaces and the hostname contains a dot. Refuse anything longer than 2000 characters.
 - [ ] **Step 4: Run them and confirm they pass**, along with `invariants.test.ts`. Expected: PASS.
 - [ ] **Step 5: Commit.** Message: `Permission rules, link handling and all interface copy`.
@@ -299,7 +300,7 @@ for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'not a link', 'ht
   - `a household left empty without the viewer is omitted`: add a household containing only a new adult, Zed, and give Zed a home. It has no `Zed` household.
   - `counts: my live items, and my claims including removed items`: after `itemRow` twice for Maya, `myItemCount` is 2. After setting one item's `removed_at`, it's 1. After `claimRow` for Grandma on a Leo item whose `removed_at` is then set, her `buyingCount` is still 1.
   - `organizer name is Maya; null when there's no organizer`.
-- [ ] **Step 2: Run them and confirm they fail.** Run `env -u TYPESAFE_API_KEY npx vitest run tests/unit/data/people.test.ts`. Expected: FAIL.
+- [ ] **Step 2: Run them and confirm they fail.** Run `npx vitest run tests/unit/data/people.test.ts`. Expected: FAIL.
 - [ ] **Step 3: Implement `lib/data/people.ts`.**
 - [ ] **Step 4: Run them and confirm they pass.** Expected: PASS.
 - [ ] **Step 5: Commit.** Message: `Find the viewer by token and build the home screen's data`.
@@ -535,7 +536,7 @@ expect(config.matcher).toBe('/p/:token')
   - `Copy link` writes `window.location.origin + '/p/' + token` to `navigator.clipboard`, then shows `Copied`.
 - [ ] **Step 2: Run them and confirm they fail.** Expected: FAIL.
 - [ ] **Step 3: Implement the module, the page and the components.** A non-organizer gets `notFound()`. Add a household, add an adult or a kid, rename, move, delete, copy the link or invitation, replace the link. Keep it plain; the spec leaves its look to the builder.
-- [ ] **Step 4: Run them and confirm they pass**, then run the full suite with `env -u TYPESAFE_API_KEY npx vitest run`. Expected: PASS.
+- [ ] **Step 4: Run them and confirm they pass**, then run the full suite with `npx vitest run`. Expected: PASS.
 - [ ] **Step 5: Commit.** Message: `Organizer page: set up the family and hand out personal links`.
 
 ### Task 12: Check it end to end, then go live with the owner
@@ -555,7 +556,7 @@ This task runs with the owner at the keyboard. The owner wants to learn these st
 
   Fix anything that fails, with a test, before going on.
 - [ ] **Step 2: Open a PR** from `feat/wish-lists` into `main` (it's been pushed task by task). Read CI's result, which runs on Node 24, before calling it green.
-- [ ] **Step 3: Account check.** Show the owner the GitHub (`gh auth status`), Vercel and Supabase accounts in use. Wait for the owner's OK that each is a personal account, not ASU.
+- [ ] **Step 3: Account check.** Show the owner the GitHub (`gh auth status`), Vercel and Supabase accounts in use. Wait for the owner's OK that each is a personal account, not a work or school one.
 - [ ] **Step 4: Supabase (owner).**
   1. Create the project `holiday-details` on the Free plan in a US West region, and save the database password in a password manager.
   2. In the SQL Editor, paste `db/migrations/001_init.sql` and run it.
