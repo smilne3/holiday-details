@@ -11,16 +11,16 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
-// Leo's list from the mockup, and Maya's own list, as getListView returns them. The ids and links
-// are made up.
+// Leo's list from the mockup, and Maya's own list, as getListView returns them. The ids, links and
+// prices are made up.
 const leo = { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo', kind: 'kid' as const }
 const maya = { id: '00000000-0000-4000-8000-0000000000a2', name: 'Maya', kind: 'adult' as const }
 const sweaterUrl = 'https://www.asos.com/women/jumpers/green-sweater/prd/123?clr=green&utm_source=list'
 
-const airpods = { id: '00000000-0000-4000-8000-0000000000c1', name: 'AirPods 5', details: null, url: 'https://www.apple.com/shop/buy-airpods/airpods-5' }
-const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', details: 'Green, size XS', url: sweaterUrl }
-const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', details: null, url: null }
-const lego = { id: '00000000-0000-4000-8000-0000000000c4', name: 'Any LEGO set', details: 'He likes the space ones', url: null }
+const airpods = { id: '00000000-0000-4000-8000-0000000000c1', name: 'AirPods 5', price: '179', details: null, url: 'https://www.apple.com/shop/buy-airpods/airpods-5' }
+const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', price: 'about $25', details: 'Green, size XS', url: sweaterUrl }
+const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', price: null, details: null, url: null }
+const lego = { id: '00000000-0000-4000-8000-0000000000c4', name: 'Any LEGO set', price: '$20–30', details: 'He likes the space ones', url: null }
 
 // Leo's list as Maya, his parent, sees it: Priya and Grandma are buying two things.
 const leoKept: ListViewData = {
@@ -58,8 +58,8 @@ const mayaOwn: ListViewData = {
   canEdit: true,
   canClaim: false,
   items: [
-    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', details: 'Size M', url: null },
-    { id: '00000000-0000-4000-8000-0000000000d2', name: 'Bird feeder', details: null, url: null },
+    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', price: '15', details: 'Size M', url: null },
+    { id: '00000000-0000-4000-8000-0000000000d2', name: 'Bird feeder', price: null, details: null, url: null },
   ],
 }
 
@@ -81,8 +81,9 @@ function show(view: ListViewData, viewerName = 'Maya', actions = fakeActions()) 
   return { actions, ...rendered }
 }
 
-// The card an item's name is on.
+// The card an item's name is on, and the lines that describe the item in it, top to bottom.
 const row = (name: string) => screen.getByText(name).closest('li')!
+const lines = (name: string) => [...row(name).querySelector('div')!.children].map(el => el.textContent)
 
 it("own: shows the surprise note, Edit and Remove, Add to my wish list, and no I'll buy this", () => {
   show(mayaOwn)
@@ -114,7 +115,7 @@ it('own: nothing on your own list ever looks claimed, even if an item carried a 
 })
 
 it("own: the type has no room for a claim on your own list, or for claiming from it", () => {
-  const item = { id: '00000000-0000-4000-8000-0000000000d3', name: 'Scarf', details: null, url: null }
+  const item = { id: '00000000-0000-4000-8000-0000000000d3', name: 'Scarf', price: null, details: null, url: null }
   // @ts-expect-error: an item on your own list can't carry a claim key, not even null
   const withClaim: ListViewData = { owner: maya, mode: 'own', keptBy: null, canEdit: true, canClaim: false, items: [{ ...item, claim: null }] }
   // @ts-expect-error: and your own list is never one you can claim from
@@ -152,6 +153,36 @@ it('other: an item someone else claimed is struck through and says Priya is buyi
   expect(screen.queryByRole('button', { name: copy.remove })).toBeNull()
   expect(screen.queryByLabelText(copy.fieldName)).toBeNull()
   expect(screen.queryByText(copy.keptByLine(['Ben', 'Maya']))).not.toBeNull()
+})
+
+// The price is its own line, under the name and above the details, on every kind of list: a bare
+// number gets a $, anything else shows as typed, and an item with no price has no line for it.
+it('own: a price shows under the name, with $ added to a bare number; no price, no line', () => {
+  show(mayaOwn)
+  expect(lines('Gardening gloves')).toEqual(['Gardening gloves', '$15', 'Size M'])
+  expect(lines('Bird feeder')).toEqual(['Bird feeder'])
+})
+
+it.each([
+  ['kept', 'Maya', leoKept],
+  ['other', 'Grandma', leoOther],
+])("%s: a price shows under the name, as typed or with $ added; no price, no line", (_, viewer, view) => {
+  show(view, viewer)
+  expect(lines('AirPods 5')).toEqual(['AirPods 5', '$179', 'apple.com ↗'])
+  expect(lines('Sweater')).toEqual(['Sweater', 'about $25', 'Green, size XS', 'asos.com ↗'])
+  expect(lines('Any LEGO set')).toEqual(['Any LEGO set', '$20–30', 'He likes the space ones'])
+  expect(lines('Yo-yo')).toEqual(['Yo-yo'])
+})
+
+// Muted like the details, and greyed with the rest of an item someone else is buying.
+it('the price line looks like the details line, open or claimed by someone else', () => {
+  show(leoOther, 'Grandma')
+  const [, openPrice, openDetails] = row('Any LEGO set').querySelector('div')!.children
+  expect(openPrice.className).toBe(openDetails.className)
+  expect(openPrice.className).toContain('text-neutral-600')
+  const [, takenPrice, takenDetails] = row('Sweater').querySelector('div')!.children
+  expect(takenPrice.className).toBe(takenDetails.className)
+  expect(takenPrice.className).toContain('text-neutral-500')
 })
 
 it('a link shows asos.com ↗, opens in a new tab with rel="noopener noreferrer", and keeps the full URL', () => {
@@ -217,6 +248,7 @@ it("Edit opens the item's form, filled in; Save sends its id; the form closes on
   const { actions } = show(mayaOwn)
   fireEvent.click(within(row('Gardening gloves')).getByRole('button', { name: copy.edit }))
   const card = screen.getByDisplayValue('Gardening gloves').closest('li')!
+  expect((within(card).getByLabelText(copy.fieldPrice) as HTMLInputElement).value).toBe('15')
   expect((within(card).getByLabelText(copy.fieldDetails) as HTMLInputElement).value).toBe('Size M')
   expect((within(card).getByLabelText(copy.fieldLink) as HTMLInputElement).value).toBe('')
   fireEvent.change(within(card).getByLabelText(copy.fieldName), { target: { value: 'Garden gloves' } })
@@ -305,7 +337,10 @@ it('an empty list says so', () => {
   screen.getByText(copy.listEmpty)
 })
 
-const typed = () => [copy.fieldName, copy.fieldDetails, copy.fieldLink].map(l => (screen.getByLabelText(l) as HTMLInputElement).value)
+const typed = () =>
+  [copy.fieldName, copy.fieldPrice, copy.fieldDetails, copy.fieldLink].map(
+    l => (screen.getByLabelText(l) as HTMLInputElement).value,
+  )
 
 it('on a page loaded before a deploy, the add form keeps what was typed across the reload, under its owner', async () => {
   const reload = watchReload()
@@ -313,6 +348,7 @@ it('on a page loaded before a deploy, the add form keeps what was typed across t
   actions.add.mockRejectedValueOnce(staleAction())
   show(leoKept, 'Maya', actions)
   fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Kite' } })
+  fireEvent.change(screen.getByLabelText(copy.fieldPrice), { target: { value: 'about $25' } })
   fireEvent.change(screen.getByLabelText(copy.fieldDetails), { target: { value: 'Red' } })
   fireEvent.change(screen.getByLabelText(copy.fieldLink), { target: { value: 'shop.example/kite' } })
   fireEvent.click(screen.getByRole('button', { name: copy.addToList('Leo') }))
@@ -323,14 +359,14 @@ it('on a page loaded before a deploy, the add form keeps what was typed across t
   // The reloaded page puts it back, once.
   cleanup()
   show(leoKept, 'Maya')
-  expect(typed()).toEqual(['Kite', 'Red', 'shop.example/kite'])
+  expect(typed()).toEqual(['Kite', 'about $25', 'Red', 'shop.example/kite'])
   cleanup()
   show(leoKept, 'Maya')
-  expect(typed()).toEqual(['', '', ''])
+  expect(typed()).toEqual(['', '', '', ''])
   // Another list's add form keeps nothing of Leo's.
   cleanup()
   show(mayaOwn, 'Maya')
-  expect(typed()).toEqual(['', '', ''])
+  expect(typed()).toEqual(['', '', '', ''])
 })
 
 // The reloaded page shows the item as it is now. An edit on a page left open across a deploy is

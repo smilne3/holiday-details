@@ -4,10 +4,15 @@ import { unstable_isUnrecognizedActionError, unstable_rethrow } from 'next/navig
 // way out, so the control should show nothing of its own (no ✓, no "try again") and stay as
 // Saving… until the page goes.
 //
-//   - A page loaded before a deploy calls Server Actions the new build doesn't have, and every retry
-//     fails the same way until the page reloads. So it reloads now, in answer to this tap, and comes
-//     back with the new build and with what the database holds, so the next tap works. Nothing
-//     reloads on its own, so this can't loop.
+//   - A page loaded before a deploy can call a Server Action the new build doesn't have. That
+//     happens only when the deploy changed the action's id. Next makes each id from the action's
+//     file and name and a build key it keeps for up to 14 days. A deploy that reuses the build cache,
+//     as Vercel's do by default, keeps every id, and a page left open across one calls the new code
+//     with its old arguments and its old form. That is why an edit field missing from a form leaves
+//     the stored value alone (updateItem in lib/data/lists.ts). When the id is gone, every retry
+//     fails the same way until the page reloads. So it reloads now, in answer to this tap, and
+//     comes back with the new build and with what the database holds, so the next tap works.
+//     Nothing reloads on its own, so this can't loop.
 //   - Signed out (no cookie, or a link the organizer replaced), every action redirect()s to /, which
 //     says to tap the link in the email. The router is already on its way there, and the call's
 //     promise rejects with Next's redirect error. Rethrowing it would make Next navigate a second

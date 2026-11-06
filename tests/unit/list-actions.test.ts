@@ -148,13 +148,17 @@ it("unclaimAction undoes the viewer's own claim, and only theirs", async () => {
 
 it("addItemAction: a parent adds to their kid's list, and the page refreshes", async () => {
   as('dev-maya')
-  const result = await addItemAction(f.leo.id, null, form({ name: 'Kite', details: 'Red', link: 'shop.example/kite' }))
+  const result = await addItemAction(
+    f.leo.id,
+    null,
+    form({ name: 'Kite', price: 'about $25', details: 'Red', link: 'shop.example/kite' }),
+  )
   expect(result).toEqual({ ok: true })
-  const [row] = await t.db.query<{ name: string; details: string; url: string }>(
-    'select name, details, url from items where owner_id = $1',
+  const [row] = await t.db.query<{ name: string; price: string; details: string; url: string }>(
+    'select name, price, details, url from items where owner_id = $1',
     [f.leo.id],
   )
-  expect(row).toEqual({ name: 'Kite', details: 'Red', url: 'https://shop.example/kite' })
+  expect(row).toEqual({ name: 'Kite', price: 'about $25', details: 'Red', url: 'https://shop.example/kite' })
   expect(refresh).toHaveBeenCalledOnce()
 })
 
@@ -183,9 +187,12 @@ it('a forged form with missing fields, a file, or no form at all gets words back
 
   const feeder = await itemRow(t.db, f.maya.id, 'Bird feeder')
   expect(await updateItemAction(feeder, null, new FormData())).toEqual(nameRequired)
-  // Only the name is required: missing details and link save as blank.
+  // Only the name is required: missing price, details and link save as blank.
   expect(await addItemAction(f.maya.id, null, form({ name: 'Kite' }))).toEqual({ ok: true })
   expect(await itemNames(f.maya.id)).toEqual(['Bird feeder', 'Kite'])
+  expect(await t.db.query("select price, details, url from items where name = 'Kite'")).toEqual([
+    { price: null, details: null, url: null },
+  ])
 })
 
 it('updateItemAction and removeItemAction go through the permission rules, by the stored owner', async () => {
@@ -205,6 +212,22 @@ it('updateItemAction and removeItemAction go through the permission rules, by th
   expect(await removeItemAction(kite)).toEqual({ ok: true })
   expect(await itemNames(f.leo.id)).toEqual([])
   expect(refresh).toHaveBeenCalledTimes(2)
+})
+
+// A page loaded before the price existed can call this action after a deploy, since the action's id
+// can outlive the build (lib/stale-page.ts). Its form has no price field, and that edit keeps the
+// price. A price field left blank is the person clearing it.
+it('updateItemAction: a form with no price field keeps the stored price, and a blank one clears it', async () => {
+  const kite = await itemRow(t.db, f.leo.id, 'Kite', { details: 'Red', price: '$30' })
+  const priceOf = async () =>
+    (await t.db.query<{ price: string | null }>('select price from items where id = $1', [kite]))[0].price
+  as('dev-maya')
+  expect(await updateItemAction(kite, null, form({ name: 'Kite', details: 'Blue', link: '' }))).toEqual({ ok: true })
+  expect(await priceOf()).toBe('$30')
+  expect(await updateItemAction(kite, null, form({ name: 'Kite', price: '', details: 'Blue', link: '' }))).toEqual({
+    ok: true,
+  })
+  expect(await priceOf()).toBeNull()
 })
 
 it('an edit to an item taken off the list since the page loaded says so, and refreshes so it leaves the page', async () => {

@@ -11,14 +11,14 @@ afterEach(() => {
 })
 
 // Grandma's Gifts I'm buying, as getBuying returns it: Leo's sweater and yo-yo (the yo-yo since
-// taken off his list), and Priya's scarf, edited after Grandma claimed it. The ids and links are
-// made up.
+// taken off his list), and Priya's scarf, edited after Grandma claimed it. The ids, links and prices
+// are made up.
 const leo = { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo' }
 const priya = { id: '00000000-0000-4000-8000-0000000000a5', name: 'Priya' }
 const sweaterUrl = 'https://www.asos.com/women/jumpers/green-sweater/prd/123?clr=green&utm_source=list'
-const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', details: 'Green, size XS', url: sweaterUrl, note: null }
-const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', details: null, url: null, note: 'removed' as const }
-const scarf = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Scarf', details: 'Not wool', url: null, note: 'changed' as const }
+const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', price: '40', details: 'Green, size XS', url: sweaterUrl, note: null }
+const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', price: null, details: null, url: null, note: 'removed' as const }
+const scarf = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Scarf', price: 'about $25', details: 'Not wool', url: null, note: 'changed' as const }
 
 const grandmas: BuyingGroup[] = [
   { recipient: leo, items: [sweater, yoyo] },
@@ -41,6 +41,8 @@ function show(groups: BuyingGroup[] = grandmas, viewerName = 'Grandma') {
 const section = (name: string) => screen.getByRole('region', { name: copy.forRecipient(name) })
 const row = (name: string) => screen.getByText(name).closest('li')!
 const undoIn = (name: string) => within(row(name)).getByRole('button', { name: copy.undo })
+// The lines that describe a gift in its card, top to bottom.
+const lines = (name: string) => [...row(name).querySelector('div')!.children].map(el => el.textContent)
 
 it('groups under For Leo, with details and the shop link', () => {
   show()
@@ -61,6 +63,19 @@ it('groups under For Leo, with details and the shop link', () => {
   expect(link.getAttribute('target')).toBe('_blank')
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   expect(within(row('Yo-yo')).queryByRole('link')).toBeNull()
+})
+
+// As on a wish list: its own line under the name, a bare number with a $ and anything else as typed,
+// and no line at all without a price. A note about the claim comes after it.
+it('a price shows under the name, as typed or with $ added; no price, no line', () => {
+  show()
+  expect(lines('Sweater')).toEqual(['Sweater', '$40', 'Green, size XS', 'asos.com ↗'])
+  expect(lines('Scarf')).toEqual(['Scarf', 'about $25', copy.changedAfterClaim, 'Not wool'])
+  expect(lines('Yo-yo')).toEqual(['Yo-yo', copy.removedFrom('Leo')])
+
+  // Muted, like the details.
+  const [, price, details] = row('Sweater').querySelector('div')!.children
+  expect(price.className).toBe(details.className)
 })
 
 it("a stored link that isn't a web address shows no link, and the page still shows", () => {

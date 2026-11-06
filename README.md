@@ -55,7 +55,9 @@ CI runs all three, plus `npm run build`, on every pull request (`.github/workflo
 
 A production build with neither variable set fails on every page rather than guess. That way a
 production deployment that has lost `DATABASE_URL` fails loudly, instead of quietly showing the
-made-up family to the real one. The schema is `db/migrations/001_init.sql`.
+made-up family to the real one. The schema is the files in `db/migrations/`, in name order. PGlite
+runs them itself; production gets each one pasted into Supabase's SQL Editor, before the code that
+needs it is merged (see the end of [`docs/go-live.md`](docs/go-live.md)).
 
 ## Going live
 

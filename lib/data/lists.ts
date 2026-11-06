@@ -5,10 +5,11 @@ import { keptBy, normalizeLink } from '@/lib/format'
 import { canEdit, canSeeClaims } from '@/lib/rules'
 import type { ItemInput, ListItem, ListViewData, OwnListItem, Person, PersonKind, Result, Viewer } from '@/lib/types'
 
-// The schema's limits on an item (db/migrations/001_init.sql), checked here first so a long field
-// gets copy.tooLong rather than a database error.
+// The schema's limits on an item (db/migrations/001_init.sql and 002_item_price.sql), checked here
+// first so a long field gets copy.tooLong rather than a database error.
 const MAX_NAME = 200
 const MAX_DETAILS = 500
+const MAX_PRICE = 40
 
 // Someone's wish list as the viewer sees it, or null when the id names no one. Items come in the
 // order they were added, so neither an edit nor a claim moves one.
@@ -44,11 +45,12 @@ export async function addItem(db: Db, viewer: Viewer, ownerId: string, input: It
   if (!owner || !canEdit(viewer, owner)) return refused(copy.notAllowed)
   const item = checkInput(input)
   if (!item.ok) return item
-  await db.query('insert into items (owner_id, name, details, url) values ($1, $2, $3, $4)', [
+  await db.query('insert into items (owner_id, name, details, url, price) values ($1, $2, $3, $4, $5)', [
     owner.id,
     item.name,
     item.details,
     item.url,
+    item.price ?? null,
   ])
   return { ok: true }
 }
@@ -57,22 +59,33 @@ export async function addItem(db: Db, viewer: Viewer, ownerId: string, input: It
 // request names. A removed item can't be edited: someone who could edit it hears it's gone (a
 // spouse took it off a kid's list while this page was open), and anyone else that they can't.
 //
-// updated_at moves only when something changed: Gifts I'm buying marks an item changed after its
-// claim by comparing it, and a save that changed nothing would tell the buyer otherwise.
+// updated_at moves only when something changed, the price included: Gifts I'm buying marks an item
+// changed after its claim by comparing it, and a save that changed nothing would tell the buyer
+// otherwise.
+//
+// The rule for edit fields: one missing from the form leaves the stored value alone. A deploy doesn't
+// always retire the Server Actions a page already has (lib/stale-page.ts), so a page loaded before a
+// field existed can still send its old form here, without that field. Blanking the field instead
+// would wipe what someone else typed since, and mark the item changed for its buyer. The price is
+// the first field added since the app went live, and $6 says whether the form had one. Any field
+// added later must work the same way. Name, details and link have been on every form ever served, so
+// only a forged request leaves one out, and app/list/actions.ts reads that as blank.
 export async function updateItem(db: Db, viewer: Viewer, itemId: string, input: ItemInput): Promise<Result> {
   const found = await findItem(db, itemId)
   if (!found || !canEdit(viewer, found.owner)) return refused(copy.notAllowed)
   if (found.removed) return gone()
   const item = checkInput(input)
   if (!item.ok) return item
+  // One statement, so the price kept is the one stored when the edit lands, with nothing read first.
   const rows = await db.query(
     `update items
-        set name = $2, details = $3, url = $4,
-            updated_at = case when (name, details, url) is distinct from ($2, $3, $4) then now()
+        set name = $2, details = $3, url = $4, price = case when $6 then $5 else price end,
+            updated_at = case when (name, details, url, price)
+                                   is distinct from ($2, $3, $4, case when $6 then $5 else price end) then now()
                               else updated_at end
       where id = $1 and removed_at is null
       returning id`,
-    [itemId, item.name, item.details, item.url],
+    [itemId, item.name, item.details, item.url, item.price ?? null, item.price !== undefined],
   )
   // No row: it was removed since the check above.
   return rows.length > 0 ? { ok: true } : gone()
@@ -127,23 +140,23 @@ export async function findItem(db: Db, itemId: string): Promise<{ owner: Person;
   return row ? { owner: toPerson(row), removed: row.removed } : null
 }
 
-type ItemRow = { id: string; name: string; details: string | null; url: string | null }
+type ItemRow = { id: string; name: string; price: string | null; details: string | null; url: string | null }
 
 // The viewer's own list. This query must never touch claims.
 async function itemsOnly(db: Db, ownerId: string): Promise<OwnListItem[]> {
   const rows = await db.query<ItemRow>(
-    `select id, name, details, url from items
+    `select id, name, price, details, url from items
       where owner_id = $1 and removed_at is null
       order by created_at, id`,
     [ownerId],
   )
-  return rows.map(r => ({ id: r.id, name: r.name, details: r.details, url: r.url }))
+  return rows.map(r => ({ id: r.id, name: r.name, price: r.price, details: r.details, url: r.url }))
 }
 
 // Anyone else's list, with who's buying each item.
 async function itemsWithClaims(db: Db, viewer: Viewer, ownerId: string): Promise<ListItem[]> {
   const rows = await db.query<ItemRow & { buyer_id: string | null; buyer_name: string | null }>(
-    `select i.id, i.name, i.details, i.url, c.buyer_id, b.name as buyer_name
+    `select i.id, i.name, i.price, i.details, i.url, c.buyer_id, b.name as buyer_name
        from items i
        left join (claims c join people b on b.id = c.buyer_id) on c.item_id = i.id
       where i.owner_id = $1 and i.removed_at is null
@@ -153,6 +166,7 @@ async function itemsWithClaims(db: Db, viewer: Viewer, ownerId: string): Promise
   return rows.map(r => ({
     id: r.id,
     name: r.name,
+    price: r.price,
     details: r.details,
     url: r.url,
     claim:
@@ -171,21 +185,32 @@ async function adultsIn(db: Db, householdId: string): Promise<string[]> {
   return rows.map(r => r.name)
 }
 
-// The form's fields, trimmed and checked against the schema's limits. Blank details or link is
-// stored as null.
-function checkInput(
-  input: ItemInput,
-): { ok: true; name: string; details: string | null; url: string | null } | { ok: false; error: string } {
+// The form's fields, trimmed and checked against the schema's limits. Blank price, details or link is
+// stored as null. The price is kept as typed, not read as a number: "about $25" and "$20–30" are
+// what people write. A price the form didn't have at all stays undefined, which updateItem reads as
+// "leave it as it is".
+function checkInput(input: ItemInput):
+  | { ok: true; name: string; price: string | null | undefined; details: string | null; url: string | null }
+  | { ok: false; error: string } {
   const name = withoutNul(input.name).trim()
+  const price = input.price === undefined ? undefined : withoutNul(input.price).trim()
   const details = withoutNul(input.details).trim()
   if (name === '') return refused(copy.nameRequired)
-  if (chars(name) > MAX_NAME || chars(details) > MAX_DETAILS) return refused(copy.tooLong)
+  if (chars(name) > MAX_NAME || chars(price ?? '') > MAX_PRICE || chars(details) > MAX_DETAILS) {
+    return refused(copy.tooLong)
+  }
   const link = normalizeLink(withoutNul(input.link))
   if (!link.ok) return refused(copy.badLink)
-  return { ok: true, name, details: details === '' ? null : details, url: link.url }
+  return {
+    ok: true,
+    name,
+    price: price === '' ? null : price,
+    details: details === '' ? null : details,
+    url: link.url,
+  }
 }
 
-// Postgres answers a NUL in text with an error, and none belongs in a name, details or a link.
+// Postgres answers a NUL in text with an error, and none belongs in a name, price, details or a link.
 // No one types one, but a forged request can send it.
 function withoutNul(s: string): string {
   return s.replaceAll('\u0000', '')

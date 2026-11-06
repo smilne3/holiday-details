@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { copy } from '@/lib/copy'
-import { keptBy, normalizeLink, possessive, shopName } from '@/lib/format'
+import { keptBy, normalizeLink, possessive, shopName, shownPrice } from '@/lib/format'
 
 it("adds 's to every name, including one ending in s", () => {
   expect(possessive('Leo')).toBe("Leo's")
@@ -58,6 +58,19 @@ it('allows up to 2000 characters, counting the https:// it adds', () => {
   const bare = longest.slice('https://'.length)
   expect(normalizeLink(bare)).toEqual({ ok: true, url: longest })
   expect(normalizeLink(bare + 'a')).toEqual({ ok: false })
+})
+
+// A price is text as typed. Only a bare number gets a dollar sign, so "40" doesn't read as 40 of
+// anything; everything else is left exactly as the person wrote it.
+it('shows a bare number price with a dollar sign, and any other price as typed', () => {
+  expect(shownPrice('40')).toBe('$40')
+  expect(shownPrice('12.5')).toBe('$12.5')
+  expect(shownPrice('12.50')).toBe('$12.50')
+  expect(shownPrice('0')).toBe('$0')
+  expect(shownPrice(' 40 ')).toBe('$40') // a row typed into the SQL Editor can have spaces
+  for (const typed of ['$40', 'about $25', '$20–30', '20-30', '40.123', '1,200', '40 dollars', '€40', 'Under 50', '.5', '40.']) {
+    expect(shownPrice(typed), typed).toBe(typed)
+  }
 })
 
 it('builds titles and counts from the helpers', () => {

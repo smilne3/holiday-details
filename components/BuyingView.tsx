@@ -6,12 +6,14 @@ import { PageNotices } from '@/components/PageNotices'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
+import { shownPrice } from '@/lib/format'
 import { pageIsLeaving } from '@/lib/stale-page'
 import type { BuyingGroup } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
 // Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
-// it's for, with the link and Undo. getBuying hands over the viewer's own claims and no one else's.
+// it's for, with its price, details and link, and Undo. The price sits under the name, as on a wish
+// list. getBuying hands over the viewer's own claims and no one else's.
 //
 // An item its owner took off their list, or edited, after it was claimed stays here with a note
 // ("Removed from Leo's list", "Changed after you claimed it"), so the buyer isn't left holding a
@@ -80,6 +82,7 @@ export function BuyingView({
                     <p id={`gift-${item.id}`} className="font-semibold text-neutral-900">
                       {item.name}
                     </p>
+                    {item.price && <p className="mt-0.5 text-sm text-neutral-600">{shownPrice(item.price)}</p>}
                     {item.note && (
                       <p className="mt-1 w-fit rounded-md bg-buying px-2 py-0.5 text-sm font-semibold text-buying-ink">
                         {item.note === 'removed' ? copy.removedFrom(recipient.name) : copy.changedAfterClaim}

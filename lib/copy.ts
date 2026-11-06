@@ -33,6 +33,7 @@ export const copy = {
   saveFailed: "That didn't save. Please try again.",
 
   fieldName: 'What is it?',
+  fieldPrice: 'About how much? (optional)',
   fieldDetails: 'Size, color, details (optional)',
   fieldLink: 'Paste a link (optional)',
   addToMyList: 'Add to my wish list',

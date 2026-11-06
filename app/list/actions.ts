@@ -63,14 +63,28 @@ function refreshed(result: Result): Result {
   return result
 }
 
-// The form's three fields as text. lib/data trims them, so each must be a string: a forged request
+// The form's four fields as text. lib/data trims them, so each must be a string: a forged request
 // can leave a field out, send a file in its place, or send no form at all, and each of those reads
 // as blank (a blank name is then refused in words) rather than throw.
+//
+// The price is the exception. A form with no price field at all is most likely an edit form from a
+// page loaded before prices existed, still calling this action after a deploy (lib/stale-page.ts).
+// Its price is left undefined, and updateItem leaves the stored price as it is. A price field sent
+// blank is the person clearing it.
 function itemInput(form: FormData): ItemInput {
-  return { name: field(form, 'name'), details: field(form, 'details'), link: field(form, 'link') }
+  return {
+    name: field(form, 'name'),
+    price: has(form, 'price') ? field(form, 'price') : undefined,
+    details: field(form, 'details'),
+    link: field(form, 'link'),
+  }
 }
 
 function field(form: FormData, key: string): string {
   const value = typeof form?.get === 'function' ? form.get(key) : null
   return typeof value === 'string' ? value : ''
+}
+
+function has(form: FormData, key: string): boolean {
+  return typeof form?.has === 'function' && form.has(key)
 }

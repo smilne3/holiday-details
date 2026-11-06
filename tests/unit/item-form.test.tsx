@@ -21,30 +21,51 @@ function setup(props: { onSaved?: () => void; onCancel?: () => void; draftKey?: 
 
 const field = (label: string) => screen.getByLabelText(label) as HTMLInputElement
 
-function fill(name: string, details = '', link = '') {
+function fill(name: string, details = '', link = '', price = '') {
   fireEvent.change(field(copy.fieldName), { target: { value: name } })
+  fireEvent.change(field(copy.fieldPrice), { target: { value: price } })
   fireEvent.change(field(copy.fieldDetails), { target: { value: details } })
   fireEvent.change(field(copy.fieldLink), { target: { value: link } })
 }
 
 const submit = () => fireEvent.click(screen.getByRole('button', { name: copy.addToMyList }))
 
-it('shows three fields labelled What is it?, Size, color, details (optional) and Paste a link (optional)', () => {
-  setup()
-  for (const label of [copy.fieldName, copy.fieldDetails, copy.fieldLink]) {
+// What the four fields hold, in the form's order.
+const values = () => [copy.fieldName, copy.fieldPrice, copy.fieldDetails, copy.fieldLink].map(l => field(l).value)
+
+it('shows four fields: What is it?, About how much? (optional), Size, color, details (optional) and Paste a link (optional)', () => {
+  const { container } = render(<ItemForm action={vi.fn()} submitLabel={copy.addToMyList} />)
+  expect([...container.querySelectorAll('label')].map(l => l.textContent)).toEqual([
+    'What is it?',
+    'About how much? (optional)',
+    'Size, color, details (optional)',
+    'Paste a link (optional)',
+  ])
+  for (const label of [copy.fieldName, copy.fieldPrice, copy.fieldDetails, copy.fieldLink]) {
     expect(field(label).tagName).toBe('INPUT')
   }
   screen.getByRole('button', { name: copy.addToMyList })
 })
 
-it('sends the three fields as typed', async () => {
+// A price is text ("about $25"), so it's a plain text field: type="number" would refuse that, and a
+// number keypad on a phone would hide the "$" key.
+it('the price is a plain text field, with no number keypad', () => {
+  setup()
+  const price = field('About how much? (optional)')
+  expect(price.type).toBe('text')
+  expect(price.getAttribute('inputmode')).toBeNull()
+  expect(price.name).toBe('price')
+})
+
+it('sends the four fields as typed', async () => {
   const { action, saved } = setup()
-  fill('Sweater', 'Green, size XS', 'asos.com/sweater')
+  fill('Sweater', 'Green, size XS', 'asos.com/sweater', 'about $25')
   submit()
   expect(action).toHaveBeenCalledOnce()
   const form = action.mock.calls[0][1]
-  expect([form.get('name'), form.get('details'), form.get('link')]).toEqual([
+  expect([form.get('name'), form.get('price'), form.get('details'), form.get('link')]).toEqual([
     'Sweater',
+    'about $25',
     'Green, size XS',
     'asos.com/sweater',
   ])
@@ -53,28 +74,20 @@ it('sends the three fields as typed', async () => {
 
 it('shows the error the server gives, and keeps what was typed so it can be fixed', async () => {
   const { saved } = setup()
-  fill('Sweater', 'Green, size XS', 'not a link')
+  fill('Sweater', 'Green, size XS', 'not a link', '$30')
   submit()
   await act(async () => saved.resolve({ ok: false, error: copy.badLink }))
   screen.getByText(copy.badLink)
-  expect([field(copy.fieldName).value, field(copy.fieldDetails).value, field(copy.fieldLink).value]).toEqual([
-    'Sweater',
-    'Green, size XS',
-    'not a link',
-  ])
+  expect(values()).toEqual(['Sweater', '$30', 'Green, size XS', 'not a link'])
 })
 
 it('clears the fields after the server says ok', async () => {
   const onSaved = vi.fn()
   const { saved } = setup({ onSaved })
-  fill('Sweater', 'Green, size XS', 'asos.com/sweater')
+  fill('Sweater', 'Green, size XS', 'asos.com/sweater', '$30')
   submit()
   await act(async () => saved.resolve({ ok: true }))
-  expect([field(copy.fieldName).value, field(copy.fieldDetails).value, field(copy.fieldLink).value]).toEqual([
-    '',
-    '',
-    '',
-  ])
+  expect(values()).toEqual(['', '', '', ''])
   expect(onSaved).toHaveBeenCalledOnce()
 })
 
@@ -107,15 +120,11 @@ it('editing starts from the item as it is, and Cancel leaves without saving', ()
     <ItemForm
       action={action}
       submitLabel={copy.save}
-      initial={{ name: 'Sweater', details: 'Green, size XS', link: 'https://www.asos.com/' }}
+      initial={{ name: 'Sweater', price: 'about $25', details: 'Green, size XS', link: 'https://www.asos.com/' }}
       onCancel={onCancel}
     />,
   )
-  expect([field(copy.fieldName).value, field(copy.fieldDetails).value, field(copy.fieldLink).value]).toEqual([
-    'Sweater',
-    'Green, size XS',
-    'https://www.asos.com/',
-  ])
+  expect(values()).toEqual(['Sweater', 'about $25', 'Green, size XS', 'https://www.asos.com/'])
   fireEvent.click(screen.getByRole('button', { name: copy.cancel }))
   expect(onCancel).toHaveBeenCalledOnce()
   expect(action).not.toHaveBeenCalled()
@@ -123,17 +132,17 @@ it('editing starts from the item as it is, and Cancel leaves without saving', ()
 
 // The key an add form keeps its typing under. The id is made up.
 const draftKey = 'add-item:00000000-0000-4000-8000-0000000000a2'
-const values = () => [copy.fieldName, copy.fieldDetails, copy.fieldLink].map(l => field(l).value)
 
 it('on a page loaded before a deploy, an add saves what was typed, reloads, and says nothing else', async () => {
   const reload = watchReload()
   const { action, saved } = setup({ draftKey })
-  fill('Sweater', 'Green, size XS', 'asos.com/sweater')
+  fill('Sweater', 'Green, size XS', 'asos.com/sweater', '$30')
   submit()
   await act(async () => saved.reject(staleAction()))
   expect(reload).toHaveBeenCalledOnce()
   expect(JSON.parse(sessionStorage.getItem(draftKey)!)).toEqual({
     name: 'Sweater',
+    price: '$30',
     details: 'Green, size XS',
     link: 'asos.com/sweater',
   })
@@ -146,13 +155,16 @@ it('on a page loaded before a deploy, an add saves what was typed, reloads, and 
 })
 
 it('the reloaded add form puts back what was typed, once', () => {
-  sessionStorage.setItem(draftKey, JSON.stringify({ name: 'Sweater', details: 'Green, size XS', link: 'asos.com/sweater' }))
+  sessionStorage.setItem(
+    draftKey,
+    JSON.stringify({ name: 'Sweater', price: '$30', details: 'Green, size XS', link: 'asos.com/sweater' }),
+  )
   setup({ draftKey })
-  expect(values()).toEqual(['Sweater', 'Green, size XS', 'asos.com/sweater'])
+  expect(values()).toEqual(['Sweater', '$30', 'Green, size XS', 'asos.com/sweater'])
   expect(sessionStorage.getItem(draftKey)).toBeNull()
   cleanup()
   setup({ draftKey })
-  expect(values()).toEqual(['', '', ''])
+  expect(values()).toEqual(['', '', '', ''])
 })
 
 it('a form without a draft key (an edit) reloads too, but keeps nothing', async () => {
@@ -181,7 +193,7 @@ it("when storage refuses (a private window can), the page still reloads, and the
   expect(reload).toHaveBeenCalledOnce()
   cleanup()
   setup({ draftKey })
-  expect(values()).toEqual(['', '', ''])
+  expect(values()).toEqual(['', '', '', ''])
 })
 
 it('signed out, a save says nothing of its own while the server sends the page to the tap-the-link page', async () => {

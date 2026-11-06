@@ -28,6 +28,8 @@ buy this", everyone except the list's owner sees it straight away.
 
 - Gifts that aren't on anyone's list. The owner confirmed duplicates come from list items.
 - Prices, product photos, ranking favourites, comments, splitting one gift between people.
+  Prices: added 2026-11-06 at the owner's request, as optional text the person types; no link
+  fetching.
 - Email or push notifications of any kind.
 - Birthdays, other occasions, or keeping past years.
 - Kids using the app.

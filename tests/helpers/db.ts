@@ -27,11 +27,11 @@ export async function itemRow(
   db: Db,
   ownerId: string,
   name: string,
-  extra: { details?: string; url?: string } = {},
+  extra: { details?: string; url?: string; price?: string } = {},
 ): Promise<string> {
   const [row] = await db.query<{ id: string }>(
-    'insert into items (owner_id, name, details, url) values ($1, $2, $3, $4) returning id',
-    [ownerId, name, extra.details ?? null, extra.url ?? null],
+    'insert into items (owner_id, name, details, url, price) values ($1, $2, $3, $4, $5) returning id',
+    [ownerId, name, extra.details ?? null, extra.url ?? null, extra.price ?? null],
   )
   return row.id
 }

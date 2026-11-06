@@ -78,17 +78,19 @@ it("Grandma sees Leo's list with its keepers and claims, and ‹ All lists goes 
   expect(markup).toContain(html(copy.ifNothingHappens('Maya')))
 })
 
+// The price is item data, so it reaches her own list; the claim on the same item doesn't.
 it("Maya's own list hands the page no claim at all, though Ben is buying one of her things", async () => {
-  await claimRow(t.db, await itemRow(t.db, f.maya.id, 'Bird feeder'), f.ben.id)
+  await claimRow(t.db, await itemRow(t.db, f.maya.id, 'Bird feeder', { price: '40' }), f.ben.id)
   cookie.token = 'dev-maya'
   const element = (await page(f.maya.id)) as ReactElement<{ view: ListViewData }>
   const items = element.props.view.items
-  expect(items.map(i => i.name)).toEqual(['Bird feeder'])
+  expect(items.map(i => [i.name, i.price])).toEqual([['Bird feeder', '40']])
   expect(items.every(i => !('claim' in i))).toBe(true)
 
   const markup = renderToStaticMarkup(element)
   expect(markup).toContain(html(copy.myWishList))
   expect(markup).toContain(html(copy.ownListNote))
+  expect(markup).toContain('$40')
   expect(markup).not.toContain('Ben')
   expect(markup).not.toContain(html(copy.illBuyThis))
 })

@@ -11,14 +11,16 @@ import type { ListViewData } from '@/lib/types'
 afterEach(cleanup)
 
 // Text with no spaces in it, as long as each field allows: a shop link pasted into "What is it?"
-// (200), a run of sizes and colors in "Size, color, details" (500), a long name for a person (60) or
-// a household (80), and a link whose shop name is long. All made up.
+// (200), a price written as one word in "About how much?" (40), a run of sizes and colors in "Size,
+// color, details" (500), a long name for a person (60) or a household (80), and a link whose shop
+// name is long. All made up.
 const item = `https://shop.example/p/${'x'.repeat(200)}`.slice(0, 200)
+const price = 'about-twenty-five-dollars-'.repeat(2).slice(0, 40)
 const details = 'size-small-color-green-'.repeat(25).slice(0, 500)
 const person = 'Grandma'.repeat(9).slice(0, 60)
 const household = 'TheGrandparentsHouse'.repeat(4).slice(0, 80)
 const url = `https://${'a'.repeat(60)}.${'b'.repeat(60)}.example/`
-const words = [item, details, person, household, 'a'.repeat(60)]
+const words = [item, price, details, person, household, 'a'.repeat(60)]
 
 // Every bit of text holding one of them sits in an element that wraps a long word (overflow-wrap is
 // inherited). jsdom can't lay a page out, so the real check is a browser at 390px; this one keeps a
@@ -64,7 +66,7 @@ it('the home page wraps a long name and a long household name', () => {
   expect(unwrapped()).toEqual([])
 })
 
-it("someone else's list wraps a long item, its details and link, the owner's name, and a buyer's", () => {
+it("someone else's list wraps a long item, its price, details and link, the owner's name, and a buyer's", () => {
   const view: ListViewData = {
     owner: { id: ids.owner, name: person, kind: 'kid' },
     mode: 'kept',
@@ -72,9 +74,9 @@ it("someone else's list wraps a long item, its details and link, the owner's nam
     canEdit: true,
     canClaim: true,
     items: [
-      { id: ids.item, name: item, details, url, claim: { buyerName: person, mine: false } },
-      { id: '00000000-0000-4000-8000-0000000000c2', name: item, details, url, claim: { buyerName: person, mine: true } },
-      { id: '00000000-0000-4000-8000-0000000000c3', name: item, details, url, claim: null },
+      { id: ids.item, name: item, price, details, url, claim: { buyerName: person, mine: false } },
+      { id: '00000000-0000-4000-8000-0000000000c2', name: item, price, details, url, claim: { buyerName: person, mine: true } },
+      { id: '00000000-0000-4000-8000-0000000000c3', name: item, price, details, url, claim: null },
     ],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
@@ -84,23 +86,23 @@ it("someone else's list wraps a long item, its details and link, the owner's nam
   expect(screen.getByText(copy.isBuying(person)).className).toContain('md:max-w-60')
 })
 
-it('My wish list wraps a long item and its details', () => {
+it('My wish list wraps a long item, its price and its details', () => {
   const view: ListViewData = {
     owner: { id: ids.owner, name: person, kind: 'adult' },
     mode: 'own',
     keptBy: null,
     canEdit: true,
     canClaim: false,
-    items: [{ id: ids.item, name: item, details, url }],
+    items: [{ id: ids.item, name: item, price, details, url }],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
 })
 
-it("Gifts I'm buying wraps a long item, its details and link, and who it's for", () => {
+it("Gifts I'm buying wraps a long item, its price, details and link, and who it's for", () => {
   render(
     <BuyingView
-      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, details, url, note: 'removed' }] }]}
+      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, price, details, url, note: 'removed' }] }]}
       viewerName={person}
       homeHref="/p/dev-maya"
       organizerName={person}
