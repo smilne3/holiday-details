@@ -61,6 +61,19 @@ it('only http(s) links are stored', async () => {
   expect(await db.query('select url from items where id = $1', [id])).toEqual([{ url: 'https://x.com' }])
 })
 
+// db/migrations/002_item_price.sql. The price is optional text, so an item without one is null.
+it('a price is optional text of up to 40 characters', async () => {
+  const none = await itemRow(db, f.leo.id, 'Kite')
+  const ok = await itemRow(db, f.leo.id, 'Kite', { price: '💵'.repeat(40) })
+  await expect(itemRow(db, f.leo.id, 'Kite', { price: 'x'.repeat(41) })).rejects.toMatchObject({
+    code: CHECK_VIOLATION,
+  })
+  expect(await db.query('select id, price from items order by price nulls first')).toEqual([
+    { id: none, price: null },
+    { id: ok, price: '💵'.repeat(40) },
+  ])
+})
+
 it('new_token() is 64 lowercase hex characters and different each call', async () => {
   const [{ a, b }] = await db.query<{ a: string; b: string }>('select new_token() as a, new_token() as b')
   expect(a).toMatch(/^[0-9a-f]{64}$/)

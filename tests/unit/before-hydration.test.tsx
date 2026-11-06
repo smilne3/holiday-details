@@ -50,9 +50,9 @@ const leoKept: ListViewData = {
   canEdit: true,
   canClaim: true,
   items: [
-    { id: id(11), name: 'Kite', details: null, url: 'https://shop.example/kite', claim: null },
-    { id: id(12), name: 'Yo-yo', details: null, url: null, claim: { buyerName: 'Maya', mine: true } },
-    { id: id(13), name: 'Sweater', details: null, url: null, claim: { buyerName: 'Priya', mine: false } },
+    { id: id(11), name: 'Kite', price: null, details: null, url: 'https://shop.example/kite', claim: null },
+    { id: id(12), name: 'Yo-yo', price: null, details: null, url: null, claim: { buyerName: 'Maya', mine: true } },
+    { id: id(13), name: 'Sweater', price: null, details: null, url: null, claim: { buyerName: 'Priya', mine: false } },
   ],
 }
 
@@ -66,7 +66,7 @@ const pages: [string, ReactElement][] = [
     "Gifts I'm buying",
     <BuyingView
       key="b"
-      groups={[{ recipient: { id: id(1), name: 'Leo' }, items: [{ id: id(12), name: 'Yo-yo', details: null, url: null, note: null }] }]}
+      groups={[{ recipient: { id: id(1), name: 'Leo' }, items: [{ id: id(12), name: 'Yo-yo', price: null, details: null, url: null, note: null }] }]}
       viewerName="Maya"
       homeHref="/p/dev-maya"
       organizerName="Maya"

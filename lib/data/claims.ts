@@ -36,12 +36,13 @@ export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> 
     recipient_name: string
     id: string
     name: string
+    price: string | null
     details: string | null
     url: string | null
     removed: boolean
     changed: boolean
   }>(
-    `select p.id as recipient_id, p.name as recipient_name, i.id, i.name, i.details, i.url,
+    `select p.id as recipient_id, p.name as recipient_name, i.id, i.name, i.price, i.details, i.url,
             i.removed_at is not null as removed, i.updated_at > c.created_at as changed
        from claims c
        join items i on i.id = c.item_id
@@ -61,6 +62,7 @@ export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> 
     group.items.push({
       id: r.id,
       name: r.name,
+      price: r.price,
       details: r.details,
       url: r.url,
       // Edited and then removed reads as removed: that's the one the buyer must act on.

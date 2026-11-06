@@ -17,10 +17,10 @@ const leo = { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo', kind: 'ki
 const maya = { id: '00000000-0000-4000-8000-0000000000a2', name: 'Maya', kind: 'adult' as const }
 const sweaterUrl = 'https://www.asos.com/women/jumpers/green-sweater/prd/123?clr=green&utm_source=list'
 
-const airpods = { id: '00000000-0000-4000-8000-0000000000c1', name: 'AirPods 5', details: null, url: 'https://www.apple.com/shop/buy-airpods/airpods-5' }
-const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', details: 'Green, size XS', url: sweaterUrl }
-const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', details: null, url: null }
-const lego = { id: '00000000-0000-4000-8000-0000000000c4', name: 'Any LEGO set', details: 'He likes the space ones', url: null }
+const airpods = { id: '00000000-0000-4000-8000-0000000000c1', name: 'AirPods 5', price: null, details: null, url: 'https://www.apple.com/shop/buy-airpods/airpods-5' }
+const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', price: null, details: 'Green, size XS', url: sweaterUrl }
+const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', price: null, details: null, url: null }
+const lego = { id: '00000000-0000-4000-8000-0000000000c4', name: 'Any LEGO set', price: null, details: 'He likes the space ones', url: null }
 
 // Leo's list as Maya, his parent, sees it: Priya and Grandma are buying two things.
 const leoKept: ListViewData = {
@@ -58,8 +58,8 @@ const mayaOwn: ListViewData = {
   canEdit: true,
   canClaim: false,
   items: [
-    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', details: 'Size M', url: null },
-    { id: '00000000-0000-4000-8000-0000000000d2', name: 'Bird feeder', details: null, url: null },
+    { id: '00000000-0000-4000-8000-0000000000d1', name: 'Gardening gloves', price: null, details: 'Size M', url: null },
+    { id: '00000000-0000-4000-8000-0000000000d2', name: 'Bird feeder', price: null, details: null, url: null },
   ],
 }
 
@@ -114,7 +114,7 @@ it('own: nothing on your own list ever looks claimed, even if an item carried a 
 })
 
 it("own: the type has no room for a claim on your own list, or for claiming from it", () => {
-  const item = { id: '00000000-0000-4000-8000-0000000000d3', name: 'Scarf', details: null, url: null }
+  const item = { id: '00000000-0000-4000-8000-0000000000d3', name: 'Scarf', price: null, details: null, url: null }
   // @ts-expect-error: an item on your own list can't carry a claim key, not even null
   const withClaim: ListViewData = { owner: maya, mode: 'own', keptBy: null, canEdit: true, canClaim: false, items: [{ ...item, claim: null }] }
   // @ts-expect-error: and your own list is never one you can claim from

@@ -16,9 +16,9 @@ afterEach(() => {
 const leo = { id: '00000000-0000-4000-8000-0000000000a3', name: 'Leo' }
 const priya = { id: '00000000-0000-4000-8000-0000000000a5', name: 'Priya' }
 const sweaterUrl = 'https://www.asos.com/women/jumpers/green-sweater/prd/123?clr=green&utm_source=list'
-const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', details: 'Green, size XS', url: sweaterUrl, note: null }
-const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', details: null, url: null, note: 'removed' as const }
-const scarf = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Scarf', details: 'Not wool', url: null, note: 'changed' as const }
+const sweater = { id: '00000000-0000-4000-8000-0000000000c2', name: 'Sweater', price: null, details: 'Green, size XS', url: sweaterUrl, note: null }
+const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', price: null, details: null, url: null, note: 'removed' as const }
+const scarf = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Scarf', price: null, details: 'Not wool', url: null, note: 'changed' as const }
 
 const grandmas: BuyingGroup[] = [
   { recipient: leo, items: [sweater, yoyo] },

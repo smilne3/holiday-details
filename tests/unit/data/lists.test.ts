@@ -30,6 +30,7 @@ const badLink = { ok: false, error: copy.badLink }
 // The form as filled in: a name, and nothing else unless given.
 const input = (name: string, more: Partial<ItemInput> = {}): ItemInput => ({
   name,
+  price: '',
   details: '',
   link: '',
   ...more,
@@ -42,9 +43,10 @@ async function row(id: string) {
     name: string
     details: string | null
     url: string | null
+    price: string | null
     updated_at: Date
     removed_at: Date | null
-  }>('select owner_id, name, details, url, updated_at, removed_at from items where id = $1', [id])
+  }>('select owner_id, name, details, url, price, updated_at, removed_at from items where id = $1', [id])
   return r
 }
 
@@ -81,7 +83,7 @@ function recording(inner: Db) {
 }
 
 it("the owner's own list carries no claim data at all", async () => {
-  await addItem(db, f.maya, f.maya.id, { name: 'Bird feeder', details: '', link: '' })
+  await addItem(db, f.maya, f.maya.id, { name: 'Bird feeder', price: '40', details: '', link: '' })
   const [item] = (await getListView(db, f.maya, f.maya.id))!.items
   await claimRow(db, item.id, f.priya.id) // direct insert helper in tests/helpers/db.ts
   const view = (await getListView(db, f.maya, f.maya.id))!
@@ -95,7 +97,7 @@ it("the owner's own list carries no claim data at all", async () => {
     keptBy: null,
     canEdit: true,
     canClaim: false,
-    items: [{ id: item.id, name: 'Bird feeder', details: null, url: null }],
+    items: [{ id: item.id, name: 'Bird feeder', price: '40', details: null, url: null }],
   })
 })
 
@@ -152,6 +154,7 @@ it("others see who's buying; your own claim is marked mine", async () => {
   const sweater = await itemRow(db, f.leo.id, 'Sweater', {
     details: 'Green, size XS',
     url: 'https://www.asos.com/',
+    price: 'about $25',
   })
   const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
   const lego = await itemRow(db, f.leo.id, 'Any LEGO set')
@@ -163,6 +166,7 @@ it("others see who's buying; your own claim is marked mine", async () => {
   expect(view.items.find(i => i.id === sweater)).toStrictEqual({
     id: sweater,
     name: 'Sweater',
+    price: 'about $25',
     details: 'Green, size XS',
     url: 'https://www.asos.com/',
     claim: { buyerName: 'Priya', mine: false },
@@ -299,8 +303,8 @@ it('addItem checks the name, details and link', async () => {
 
 it('addItem trims, stores blanks as null, adds https:// to a bare link, keeps emoji as typed', async () => {
   const add = (i: ItemInput) => addItem(db, f.maya, f.leo.id, i)
-  expect(await add({ name: '  Kite  ', details: '   ', link: '  ' })).toEqual(ok)
-  const rocket = { name: 'Rocket 🚀 LEGO ✨', details: ' Green, size XS ', link: 'amazon.com/dp/1' }
+  expect(await add({ name: '  Kite  ', price: ' ', details: '   ', link: '  ' })).toEqual(ok)
+  const rocket = { name: 'Rocket 🚀 LEGO ✨', price: '', details: ' Green, size XS ', link: 'amazon.com/dp/1' }
   expect(await add(rocket)).toEqual(ok)
   const long = 'https://www.asos.com/p/123?clr=green&utm_source=x&utm_medium=y'
   expect(await add(input('Sweater', { link: long }))).toEqual(ok)
@@ -315,16 +319,59 @@ it('addItem trims, stores blanks as null, adds https:// to a bare link, keeps em
   ])
 })
 
+// The price is text, as typed: "about $25" and "$20–30" are as good as "40". It's never a number.
+it('addItem stores the price trimmed and as typed, and a blank one as null', async () => {
+  const add = (i: ItemInput) => addItem(db, f.maya, f.leo.id, i)
+  expect(await add(input('Kite', { price: '  about $25 ' }))).toEqual(ok)
+  expect(await add(input('Sweater', { price: '$20–30' }))).toEqual(ok)
+  expect(await add(input('Yo-yo', { price: '40' }))).toEqual(ok)
+  expect(await add(input('Drum', { price: '   ' }))).toEqual(ok)
+  expect(await add(input('Paint set'))).toEqual(ok)
+
+  const rows = await db.query('select name, price from items where owner_id = $1 order by name', [f.leo.id])
+  expect(rows).toEqual([
+    { name: 'Drum', price: null },
+    { name: 'Kite', price: 'about $25' },
+    { name: 'Paint set', price: null },
+    { name: 'Sweater', price: '$20–30' },
+    { name: 'Yo-yo', price: '40' },
+  ])
+})
+
+it('a price of 41 characters is refused with the same words as any long field, and 40 is fine', async () => {
+  const add = (i: ItemInput) => addItem(db, f.maya, f.leo.id, i)
+  expect(await add(input('Kite', { price: 'x'.repeat(41) }))).toEqual(tooLong)
+  expect(await add(input('Kite', { price: '💵'.repeat(41) }))).toEqual(tooLong)
+  expect(await db.query('select id from items')).toEqual([])
+
+  // Counted in characters as Postgres counts them, after trimming.
+  expect(await add(input('Kite', { price: 'x'.repeat(40) }))).toEqual(ok)
+  expect(await add(input('Kite', { price: '💵'.repeat(40) }))).toEqual(ok)
+  expect(await add(input('Kite', { price: ` ${'y'.repeat(40)} ` }))).toEqual(ok)
+  expect(await db.query('select count(*)::int as n from items')).toEqual([{ n: 3 }])
+})
+
+it('updateItem sets, changes and clears the price', async () => {
+  const kite = await itemRow(db, f.leo.id, 'Kite')
+  const edit = (price: string) => updateItem(db, f.maya, kite, input('Kite', { price }))
+  expect(await edit(' 40 ')).toEqual(ok)
+  expect((await row(kite)).price).toBe('40')
+  expect(await edit('about $25')).toEqual(ok)
+  expect((await row(kite)).price).toBe('about $25')
+  expect(await edit('  ')).toEqual(ok)
+  expect((await row(kite)).price).toBeNull()
+})
+
 // Postgres answers a NUL in text with an error. No one types one, but a forged request can send it.
 it('a NUL character is dropped, so the save is not an error', async () => {
-  const withNuls = { name: 'Ki\u0000te', details: 'Red\u0000', link: 'example.com/\u0000k' }
+  const withNuls = { name: 'Ki\u0000te', price: '\u000040', details: 'Red\u0000', link: 'example.com/\u0000k' }
   expect(await addItem(db, f.maya, f.leo.id, withNuls)).toEqual(ok)
   const kite = await idOf(f.leo.id, 'Kite')
-  expect(await row(kite)).toMatchObject({ name: 'Kite', details: 'Red', url: 'https://example.com/k' })
+  expect(await row(kite)).toMatchObject({ name: 'Kite', price: '40', details: 'Red', url: 'https://example.com/k' })
 
-  const onlyNuls = { name: '\u0000Box kite', details: '\u0000', link: '\u0000' }
+  const onlyNuls = { name: '\u0000Box kite', price: '\u0000', details: '\u0000', link: '\u0000' }
   expect(await updateItem(db, f.maya, kite, onlyNuls)).toEqual(ok)
-  expect(await row(kite)).toMatchObject({ name: 'Box kite', details: null, url: null })
+  expect(await row(kite)).toMatchObject({ name: 'Box kite', price: null, details: null, url: null })
 })
 
 it('updateItem: the owner saves, and updated_at moves forward', async () => {
@@ -332,7 +379,7 @@ it('updateItem: the owner saves, and updated_at moves forward', async () => {
   await backdate(feeder)
   const before = (await row(feeder)).updated_at
 
-  const edit = { name: ' Bird bath ', details: 'Stone', link: 'example.com/bath' }
+  const edit = { name: ' Bird bath ', price: '', details: 'Stone', link: 'example.com/bath' }
   expect(await updateItem(db, f.maya, feeder, edit)).toEqual(ok)
   const after = await row(feeder)
   expect(after).toMatchObject({
@@ -356,16 +403,32 @@ it('updateItem: a save that changes nothing leaves updated_at alone', async () =
   const sweater = await itemRow(db, f.leo.id, 'Sweater', {
     details: 'Green, size XS',
     url: 'https://www.asos.com/',
+    price: '$30',
   })
   await backdate(sweater)
   const before = (await row(sweater)).updated_at
 
-  const same = { name: 'Sweater ', details: ' Green, size XS', link: 'https://www.asos.com/' }
+  const same = { name: 'Sweater ', price: ' $30 ', details: ' Green, size XS', link: 'https://www.asos.com/' }
   expect(await updateItem(db, f.maya, sweater, same)).toEqual(ok)
   expect((await row(sweater)).updated_at).toEqual(before)
 
   expect(await updateItem(db, f.maya, sweater, { ...same, details: 'Green, size S' })).toEqual(ok)
   expect((await row(sweater)).updated_at.getTime()).toBeGreaterThan(before.getTime())
+})
+
+// A new price is a change like any other: a buyer who claimed the item should hear of it.
+it('updateItem: a change to the price alone moves updated_at, and so does clearing it', async () => {
+  const sweater = await itemRow(db, f.leo.id, 'Sweater', { price: '$30' })
+  const edit = async (price: string) => {
+    await backdate(sweater)
+    const before = (await row(sweater)).updated_at
+    expect(await updateItem(db, f.maya, sweater, input('Sweater', { price }))).toEqual(ok)
+    return (await row(sweater)).updated_at.getTime() > before.getTime()
+  }
+  expect(await edit('about $25')).toBe(true)
+  expect(await edit('')).toBe(true)
+  expect(await edit('  ')).toBe(false) // still none
+  expect(await edit('40')).toBe(true)
 })
 
 it("updateItem: someone else's item or an unknown id is notAllowed", async () => {
@@ -424,8 +487,9 @@ it('updateItem checks the input as addItem does, and changes nothing when it fai
   expect(await update(input(' '))).toEqual(nameRequired)
   expect(await update(input('x'.repeat(201)))).toEqual(tooLong)
   expect(await update(input('Kite', { details: 'x'.repeat(501) }))).toEqual(tooLong)
+  expect(await update(input('Kite', { price: 'x'.repeat(41) }))).toEqual(tooLong)
   expect(await update(input('Kite', { link: 'javascript:x' }))).toEqual(badLink)
-  expect(await row(kite)).toMatchObject({ name: 'Kite', details: null, url: null })
+  expect(await row(kite)).toMatchObject({ name: 'Kite', price: null, details: null, url: null })
 })
 
 it('removeItem sets removed_at and keeps any claim; a non-editor gets notAllowed', async () => {

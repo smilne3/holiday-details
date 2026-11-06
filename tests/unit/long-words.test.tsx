@@ -72,9 +72,9 @@ it("someone else's list wraps a long item, its details and link, the owner's nam
     canEdit: true,
     canClaim: true,
     items: [
-      { id: ids.item, name: item, details, url, claim: { buyerName: person, mine: false } },
-      { id: '00000000-0000-4000-8000-0000000000c2', name: item, details, url, claim: { buyerName: person, mine: true } },
-      { id: '00000000-0000-4000-8000-0000000000c3', name: item, details, url, claim: null },
+      { id: ids.item, name: item, price: null, details, url, claim: { buyerName: person, mine: false } },
+      { id: '00000000-0000-4000-8000-0000000000c2', name: item, price: null, details, url, claim: { buyerName: person, mine: true } },
+      { id: '00000000-0000-4000-8000-0000000000c3', name: item, price: null, details, url, claim: null },
     ],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
@@ -91,7 +91,7 @@ it('My wish list wraps a long item and its details', () => {
     keptBy: null,
     canEdit: true,
     canClaim: false,
-    items: [{ id: ids.item, name: item, details, url }],
+    items: [{ id: ids.item, name: item, price: null, details, url }],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
@@ -100,7 +100,7 @@ it('My wish list wraps a long item and its details', () => {
 it("Gifts I'm buying wraps a long item, its details and link, and who it's for", () => {
   render(
     <BuyingView
-      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, details, url, note: 'removed' }] }]}
+      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, price: null, details, url, note: 'removed' }] }]}
       viewerName={person}
       homeHref="/p/dev-maya"
       organizerName={person}

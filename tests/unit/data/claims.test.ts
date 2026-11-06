@@ -37,7 +37,7 @@ async function itemAt(
   ownerId: string,
   name: string,
   createdAt: string,
-  extra: { details?: string; url?: string } = {},
+  extra: { details?: string; url?: string; price?: string } = {},
 ): Promise<string> {
   const id = await itemRow(db, ownerId, name, extra)
   await db.query('update items set created_at = $2, updated_at = $2 where id = $1', [id, createdAt])
@@ -218,10 +218,11 @@ it('Undo on a gift whose item was taken off the list clears it, from Gifts I\'m 
   expect((await getHome(db, f.grandma)).buyingCount).toBe(0)
 })
 
-it('getBuying groups my claims by recipient name, with links and details', async () => {
+it('getBuying groups my claims by recipient name, with prices, links and details', async () => {
   const sweater = await itemAt(f.leo.id, 'Sweater', '2026-11-01T10:00:00Z', {
     details: 'Green, size XS',
     url: 'https://www.asos.com/',
+    price: 'about $25',
   })
   const yoyo = await itemAt(f.leo.id, 'Yo-yo', '2026-11-01T10:01:00Z')
   const paints = await itemAt(f.ivy.id, 'Paint set', '2026-11-01T10:02:00Z', { details: 'Watercolour' })
@@ -237,22 +238,29 @@ it('getBuying groups my claims by recipient name, with links and details', async
   expect(await getBuying(db, f.grandma)).toStrictEqual([
     {
       recipient: { id: f.ivy.id, name: 'Ivy' },
-      items: [{ id: paints, name: 'Paint set', details: 'Watercolour', url: null, note: null }],
+      items: [{ id: paints, name: 'Paint set', price: null, details: 'Watercolour', url: null, note: null }],
     },
     {
       recipient: { id: f.leo.id, name: 'Leo' },
       items: [
-        { id: sweater, name: 'Sweater', details: 'Green, size XS', url: 'https://www.asos.com/', note: null },
-        { id: yoyo, name: 'Yo-yo', details: null, url: null, note: null },
+        {
+          id: sweater,
+          name: 'Sweater',
+          price: 'about $25',
+          details: 'Green, size XS',
+          url: 'https://www.asos.com/',
+          note: null,
+        },
+        { id: yoyo, name: 'Yo-yo', price: null, details: null, url: null, note: null },
       ],
     },
     {
       recipient: { id: f.maya.id, name: 'Maya' },
-      items: [{ id: feeder, name: 'Bird feeder', details: null, url: null, note: null }],
+      items: [{ id: feeder, name: 'Bird feeder', price: null, details: null, url: null, note: null }],
     },
     {
       recipient: { id: f.ollie.id, name: 'Ollie' },
-      items: [{ id: boots, name: 'Rain boots', details: null, url: 'https://example.com/boots', note: null }],
+      items: [{ id: boots, name: 'Rain boots', price: null, details: null, url: 'https://example.com/boots', note: null }],
     },
   ])
   expect(await getBuying(db, f.grandpa)).toStrictEqual([])
@@ -272,34 +280,60 @@ it("a claimed item edited afterwards is noted 'changed'; one removed afterwards 
   const ok = { ok: true }
   // A real edit is a change.
   expect(
-    await updateItem(db, f.maya, sweater, { name: 'Sweater', details: 'Green, size S', link: '' }),
+    await updateItem(db, f.maya, sweater, { name: 'Sweater', price: '', details: 'Green, size S', link: '' }),
   ).toStrictEqual(ok)
   // Removal keeps the claim, and the item stays in Gifts I'm buying.
   expect(await removeItem(db, f.ben, yoyo)).toStrictEqual(ok)
   // A save that changed nothing isn't a change.
   expect(
-    await updateItem(db, f.maya, lego, { name: 'Any LEGO set', details: '', link: '' }),
+    await updateItem(db, f.maya, lego, { name: 'Any LEGO set', price: '', details: '', link: '' }),
   ).toStrictEqual(ok)
   // Edited, then removed: removed says more.
-  await updateItem(db, f.maya, kite, { name: 'Red kite', details: '', link: '' })
+  await updateItem(db, f.maya, kite, { name: 'Red kite', price: '', details: '', link: '' })
   await removeItem(db, f.maya, kite)
 
   const [leo] = await getBuying(db, f.grandma)
   expect(leo.recipient).toStrictEqual({ id: f.leo.id, name: 'Leo' })
   expect(leo.items).toStrictEqual([
-    { id: sweater, name: 'Sweater', details: 'Green, size S', url: null, note: 'changed' },
-    { id: yoyo, name: 'Yo-yo', details: null, url: null, note: 'removed' },
-    { id: lego, name: 'Any LEGO set', details: null, url: null, note: null },
-    { id: kite, name: 'Red kite', details: null, url: null, note: 'removed' },
-    { id: scarf, name: 'Scarf', details: null, url: null, note: null },
+    { id: sweater, name: 'Sweater', price: null, details: 'Green, size S', url: null, note: 'changed' },
+    { id: yoyo, name: 'Yo-yo', price: null, details: null, url: null, note: 'removed' },
+    { id: lego, name: 'Any LEGO set', price: null, details: null, url: null, note: null },
+    { id: kite, name: 'Red kite', price: null, details: null, url: null, note: 'removed' },
+    { id: scarf, name: 'Scarf', price: null, details: null, url: null, note: null },
   ])
   // The home screen's count agrees, removed items included.
   expect((await getHome(db, f.grandma)).buyingCount).toBe(5)
 })
 
+// The price is part of what the buyer agreed to buy, so a new one, or none, is news to them. The same
+// price saved again isn't.
+it("a price-only edit after a claim is noted 'changed'; the same price saved again is not", async () => {
+  const kite = await itemAt(f.leo.id, 'Kite', '2026-11-01T10:00:00Z', { price: '40' })
+  const drum = await itemAt(f.leo.id, 'Drum', '2026-11-01T10:01:00Z', { price: '$30' })
+  const yoyo = await itemAt(f.leo.id, 'Yo-yo', '2026-11-01T10:02:00Z', { price: '$5' })
+  for (const id of [kite, drum, yoyo]) {
+    expect(await claimItem(db, f.grandma, id)).toBe('claimed')
+    await claimedYesterday(id)
+  }
+
+  const ok = { ok: true }
+  const edit = (id: string, name: string, price: string) =>
+    updateItem(db, f.maya, id, { name, price, details: '', link: '' })
+  expect(await edit(kite, 'Kite', 'about $25')).toStrictEqual(ok) // a new price
+  expect(await edit(drum, 'Drum', '')).toStrictEqual(ok) // no price any more
+  expect(await edit(yoyo, 'Yo-yo', ' $5 ')).toStrictEqual(ok) // the same, as typed with spaces
+
+  const [leo] = await getBuying(db, f.grandma)
+  expect(leo.items.map(i => [i.name, i.price, i.note])).toStrictEqual([
+    ['Kite', 'about $25', 'changed'],
+    ['Drum', null, 'changed'],
+    ['Yo-yo', '$5', null],
+  ])
+})
+
 it("an edit made before the claim isn't a change", async () => {
   const sweater = await itemRow(db, f.leo.id, 'Sweater')
-  await updateItem(db, f.maya, sweater, { name: 'Sweater', details: 'Size S', link: '' })
+  await updateItem(db, f.maya, sweater, { name: 'Sweater', price: '', details: 'Size S', link: '' })
   await db.query("update items set updated_at = now() - interval '1 day' where id = $1", [sweater])
   expect(await claimItem(db, f.grandma, sweater)).toBe('claimed')
   expect((await getBuying(db, f.grandma))[0].items[0].note).toBeNull()
