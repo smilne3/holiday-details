@@ -123,6 +123,16 @@ it("an owner's claim on their own item is refused, and the answer is the same wh
   expect(await buyerOf(gloves)).toBe(f.ben.id)
 })
 
+it('unclaimAction undoes a claim on an item taken off the list since, and refreshes', async () => {
+  const kite = await itemRow(t.db, f.leo.id, 'Kite')
+  await claimRow(t.db, kite, f.grandma.id)
+  await t.db.query('update items set removed_at = now() where id = $1', [kite])
+  as('dev-grandma')
+  await unclaimAction(kite)
+  expect(await buyerOf(kite)).toBeUndefined()
+  expect(refresh).toHaveBeenCalledOnce()
+})
+
 it("unclaimAction undoes the viewer's own claim, and only theirs", async () => {
   const kite = await itemRow(t.db, f.leo.id, 'Kite')
   const drum = await itemRow(t.db, f.leo.id, 'Drum')

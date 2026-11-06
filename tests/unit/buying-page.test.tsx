@@ -3,6 +3,7 @@ import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import BuyingPage from '@/app/buying/page'
+import { unclaimAction } from '@/app/list/actions'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -69,4 +70,10 @@ it('someone who is buying nothing sees the empty message', async () => {
   const markup = renderToStaticMarkup(await BuyingPage())
   expect(markup).toContain(html(copy.buyingEmpty))
   expect(markup).toContain(html(copy.signedInAs('Ben')))
+})
+
+it("hands Undo the list's own unclaimAction", async () => {
+  cookie.token = 'dev-grandma'
+  const element = (await BuyingPage()) as ReactElement<{ unclaim: unknown }>
+  expect(element.props.unclaim).toBe(unclaimAction)
 })

@@ -3,6 +3,14 @@ import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import ListPage from '@/app/list/[personId]/page'
+import {
+  addItemAction,
+  claimAction,
+  removeItemAction,
+  unclaimAction,
+  updateItemAction,
+} from '@/app/list/actions'
+import type { ListActions } from '@/components/ListView'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -81,4 +89,20 @@ it("Maya's own list hands the page no claim at all, though Ben is buying one of 
   expect(markup).toContain(html(copy.ownListNote))
   expect(markup).not.toContain('Ben')
   expect(markup).not.toContain(html(copy.illBuyThis))
+})
+
+// Each control gets the Server Action it names, and the page hands over nothing else.
+it('hands the list exactly the five list actions, each under its own name', async () => {
+  cookie.token = 'dev-grandma'
+  const element = (await page(f.leo.id)) as ReactElement<{ actions: ListActions }>
+  const expected = {
+    claim: claimAction,
+    unclaim: unclaimAction,
+    add: addItemAction,
+    update: updateItemAction,
+    remove: removeItemAction,
+  }
+  const actions = element.props.actions as unknown as Record<string, unknown>
+  expect(Object.keys(actions).sort()).toEqual(Object.keys(expected).sort())
+  for (const [name, action] of Object.entries(expected)) expect(actions[name], name).toBe(action)
 })

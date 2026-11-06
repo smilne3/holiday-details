@@ -134,6 +134,14 @@ it("an owner claiming their own item is 'not-allowed', even when it is taken", a
   expect(await buyerOf(gloves)).toBeNull()
 })
 
+// Postgres reads a uuid in any case. The item's id has letters in it, so capitals change it.
+it("an owner's own item is 'not-allowed' with its id in capitals too", async () => {
+  const feeder = 'abcdef12-3456-4789-8abc-def123456789'
+  await db.query("insert into items (id, owner_id, name) values ($1, $2, 'Bird feeder')", [feeder, f.maya.id])
+  expect(await claimItem(db, f.maya, feeder.toUpperCase())).toBe('not-allowed')
+  expect(await claimCount()).toBe(0)
+})
+
 it("a removed item, an unknown id, or 'not-a-uuid' is 'gone'", async () => {
   const kite = await itemRow(db, f.leo.id, 'Kite')
   await removeItem(db, f.maya, kite)
@@ -142,11 +150,15 @@ it("a removed item, an unknown id, or 'not-a-uuid' is 'gone'", async () => {
   expect(await claimItem(db, f.grandma, 'not-a-uuid')).toBe('gone')
   expect(await claimCount()).toBe(0)
 
-  // The owner's own removed item, claimed before it went: the answer mustn't say it's taken.
+  // The owner's own removed items, one claimed before it went and one not: both are 'gone', so the
+  // answer can't say whether anyone was buying it.
   const scarf = await itemRow(db, f.priya.id, 'Scarf')
+  const cookbook = await itemRow(db, f.priya.id, 'Cookbook')
   await claimRow(db, scarf, f.sam.id)
   await removeItem(db, f.priya, scarf)
-  expect(await claimItem(db, f.priya, scarf)).not.toBe('taken')
+  await removeItem(db, f.priya, cookbook)
+  expect(await claimItem(db, f.priya, cookbook)).toBe('gone')
+  expect(await claimItem(db, f.priya, scarf)).toBe('gone')
 })
 
 it("an item removed between the check and the insert is 'gone', and isn't claimed", async () => {
@@ -191,6 +203,19 @@ it('unclaim removes only your own claim', async () => {
   await expect(unclaimItem(db, f.grandma, 'not-a-uuid')).resolves.toBeUndefined()
   await expect(unclaimItem(db, f.grandma, crypto.randomUUID())).resolves.toBeUndefined()
   expect(await claimCount()).toBe(2)
+})
+
+// A removed item stays in Gifts I'm buying until the buyer undoes it, so Undo has to work on it.
+it('Undo on a gift whose item was taken off the list clears it, from Gifts I\'m buying and its count', async () => {
+  const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
+  expect(await claimItem(db, f.grandma, yoyo)).toBe('claimed')
+  await removeItem(db, f.maya, yoyo)
+  expect((await getBuying(db, f.grandma))[0].items[0].note).toBe('removed')
+
+  await unclaimItem(db, f.grandma, yoyo)
+  expect(await buyerOf(yoyo)).toBeNull()
+  expect(await getBuying(db, f.grandma)).toStrictEqual([])
+  expect((await getHome(db, f.grandma)).buyingCount).toBe(0)
 })
 
 it('getBuying groups my claims by recipient name, with links and details', async () => {

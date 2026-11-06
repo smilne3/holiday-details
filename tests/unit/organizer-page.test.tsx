@@ -2,8 +2,16 @@
 import { isValidElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
-import { createHouseholdAction } from '@/app/organizer/actions'
+import {
+  addPersonAction,
+  createHouseholdAction,
+  deletePersonAction,
+  renameHouseholdAction,
+  replaceLinkAction,
+  updatePersonAction,
+} from '@/app/organizer/actions'
 import OrganizerPage from '@/app/organizer/page'
+import { HouseholdCard } from '@/components/organizer/HouseholdCard'
 import { NameForm } from '@/components/organizer/NameForm'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -77,4 +85,24 @@ it("Add a household keeps what was typed across a reload after a deploy, under t
   cookie.token = 'dev-maya'
   const form = elements(await OrganizerPage()).find(e => e.type === NameForm && e.props.action === createHouseholdAction)
   expect(form?.props.draftKey).toBe('add-household')
+})
+
+// Each control gets the Server Action it names. Swapping two of the same shape, deletePerson and
+// replaceLink, would still type-check, and Remove would replace a link.
+it("hands every household card exactly the five organizer actions, each under its own name", async () => {
+  cookie.token = 'dev-maya'
+  const cards = elements(await OrganizerPage()).filter(e => e.type === HouseholdCard)
+  expect(cards).toHaveLength(3)
+  const expected = {
+    renameHousehold: renameHouseholdAction,
+    addPerson: addPersonAction,
+    updatePerson: updatePersonAction,
+    deletePerson: deletePersonAction,
+    replaceLink: replaceLinkAction,
+  }
+  for (const card of cards) {
+    const actions = card.props.actions as Record<string, unknown>
+    expect(Object.keys(actions).sort()).toEqual(Object.keys(expected).sort())
+    for (const [name, action] of Object.entries(expected)) expect(actions[name], name).toBe(action)
+  }
 })

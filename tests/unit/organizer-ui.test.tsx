@@ -329,6 +329,20 @@ it('Add an adult and Add a kid send the name and which one, and the field clears
   expect(name().value).toBe('Pip')
 })
 
+it('one save at a time: two taps on Add an adult, then a submit while it reads Saving…, add one person', async () => {
+  const { actions, answer } = card()
+  fireEvent.change(screen.getByLabelText(copy.fieldNewPerson), { target: { value: 'Zed' } })
+  const add = button(copy.addAdult)
+  act(() => {
+    add.click()
+    add.click()
+  })
+  fireEvent.submit(button(copy.saving).closest('form')!)
+  expect(actions.addPerson).toHaveBeenCalledOnce()
+  await answer({ ok: true })
+  expect(actions.addPerson).toHaveBeenCalledOnce()
+})
+
 // What a browser does with Enter, or Go on a phone's keyboard, in a text field (HTML's implicit
 // submission), which jsdom doesn't do itself: it presses the form's default button, the first submit
 // button, unless that button is disabled. A keyboard that reports the key sends a keydown first,

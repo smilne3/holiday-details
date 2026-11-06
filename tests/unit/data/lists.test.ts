@@ -116,6 +116,24 @@ it("a claim changes nothing in the owner's view, which never reads claims", asyn
   expect(spouse.sql.some(q => /claims/i.test(q))).toBe(true)
 })
 
+// Postgres reads a uuid in any case, so /list/<Maya's id in capitals> opens her list. It must still
+// be her own: the comparison is with her id as stored, not as typed. The made-up family's ids are
+// all digits, so Maya gets one with letters in it first, as a real one has.
+it('your own list opened with your id in capitals is still your own, and reads no claims', async () => {
+  const maya = { ...f.maya, id: 'abcdef12-3456-4789-8abc-def123456789' }
+  await db.query('update people set id = $2 where id = $1', [f.maya.id, maya.id])
+  const feeder = await itemRow(db, maya.id, 'Bird feeder')
+  await claimRow(db, feeder, f.grandma.id)
+
+  const own = recording(db)
+  const view = (await getListView(own.db, maya, maya.id.toUpperCase()))!
+  expect(view.mode).toBe('own')
+  expect(view.owner.id).toBe(maya.id)
+  expect(view.items.map(i => i.id)).toEqual([feeder])
+  expect('claim' in view.items[0]).toBe(false)
+  expect(own.sql.filter(q => /claims/i.test(q))).toEqual([])
+})
+
 it("a parent sees claims on their kid's list and can edit it", async () => {
   const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
   const kite = await itemRow(db, f.leo.id, 'Kite')

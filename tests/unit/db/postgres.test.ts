@@ -7,16 +7,14 @@ import { createPostgresDb } from '@/lib/db/postgres'
 const postgres = vi.hoisted(() => vi.fn(() => ({ unsafe: vi.fn() })))
 vi.mock('postgres', () => ({ default: postgres }))
 
+// Only the options that matter for safety and correctness are pinned, so tuning the pool's size or
+// timeouts doesn't fail a test about TLS.
 it('connects over TLS, with no prepared statements for the transaction pooler', () => {
   const url = 'postgresql://postgres.example:secret@pooler.example.com:6543/postgres'
   createPostgresDb(url)
   expect(postgres).toHaveBeenCalledOnce()
-  expect(postgres).toHaveBeenCalledWith(url, {
-    ssl: 'require',
-    prepare: false,
-    max: 5,
-    connect_timeout: 10,
-    idle_timeout: 20,
-    transform: { undefined: null },
-  })
+  expect(postgres).toHaveBeenCalledWith(
+    url,
+    expect.objectContaining({ ssl: 'require', prepare: false, transform: { undefined: null } }),
+  )
 })

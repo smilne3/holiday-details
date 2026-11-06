@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { seedDevFamily, seedDevItems } from '@/db/dev-family'
+import { seedDevFamily, seedDevItems, type Family } from '@/db/dev-family'
 import { createPgliteDb } from '@/lib/db/pglite'
 import type { Db } from '@/lib/db/types'
 
@@ -10,11 +10,13 @@ import type { Db } from '@/lib/db/types'
 describe('the made-up family', () => {
   let a: Db & { close(): Promise<void> }
   let b: Db & { close(): Promise<void> }
+  let family: Family
 
   beforeAll(async () => {
     a = await createPgliteDb()
     b = await createPgliteDb()
-    await seedDevItems(a, await seedDevFamily(a))
+    family = await seedDevFamily(a)
+    await seedDevItems(a, family)
     await seedDevItems(b, await seedDevFamily(b))
   })
 
@@ -37,5 +39,27 @@ describe('the made-up family', () => {
     expect(first.people).toHaveLength(9)
     expect(first.items).toHaveLength(16)
     expect(await ids(b)).toEqual(first)
+  })
+
+  // Both copies above come from one loaded module, so ids random per server process would pass
+  // there. These literals are what every server instance's copy must hold.
+  it('gives each row the same literal id, whichever process seeds it', async () => {
+    const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
+    expect(family.households).toStrictEqual({ benMaya: id(1001), samPriya: id(1002), grandparents: id(1003) })
+    const people = await a.query<{ name: string; id: string }>('select name, id from people order by id')
+    expect(Object.fromEntries(people.map(p => [p.name, p.id]))).toStrictEqual({
+      Ben: id(2001),
+      Maya: '00000000-0000-4000-8000-000000002002',
+      Leo: id(2003),
+      Ivy: id(2004),
+      Sam: id(2005),
+      Priya: id(2006),
+      Ollie: id(2007),
+      Grandma: id(2008),
+      Grandpa: id(2009),
+    })
+    expect(family.maya.id).toBe('00000000-0000-4000-8000-000000002002')
+    const [sweater] = await a.query<{ id: string }>("select id from items where name = 'Sweater'")
+    expect(sweater.id).toBe('00000000-0000-4000-8000-000000003002')
   })
 })
