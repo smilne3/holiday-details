@@ -323,6 +323,51 @@ it('Add an adult and Add a kid send the name and which one, and the field clears
   expect(name().value).toBe('Pip')
 })
 
+// What a browser does with Enter, or Go on a phone's keyboard, in a text field (HTML's implicit
+// submission), which jsdom doesn't do itself: it presses the form's default button, the first submit
+// button, unless that button is disabled. A keyboard that reports the key sends a keydown first,
+// and cancelling it stops the rest.
+function pressEnter(field: HTMLElement, { reported = true } = {}) {
+  if (reported && !fireEvent.keyDown(field, { key: 'Enter', code: 'Enter' })) return
+  const defaultButton = field.closest('form')!.querySelector<HTMLButtonElement>('button[type="submit"]')
+  if (defaultButton && !defaultButton.disabled) fireEvent.click(defaultButton)
+}
+
+it('Enter in the new-person field adds no one: the organizer taps Add an adult or Add a kid', async () => {
+  const { actions, answer } = card()
+  const name = screen.getByLabelText(copy.fieldNewPerson) as HTMLInputElement
+  fireEvent.change(name, { target: { value: 'Pip' } })
+  pressEnter(name)
+  expect(actions.addPerson).not.toHaveBeenCalled()
+  expect(name.value).toBe('Pip')
+  // Enter is cancelled itself, so no browser gets as far as choosing a button.
+  expect(fireEvent.keyDown(name, { key: 'Enter', code: 'Enter' })).toBe(false)
+
+  fireEvent.click(button(copy.addKid))
+  const [, , form] = actions.addPerson.mock.calls[0]
+  expect([form.get('name'), form.get('kind')]).toEqual(['Pip', 'kid'])
+  await answer({ ok: true })
+})
+
+it("nor does Go on a phone keyboard that doesn't report the key", () => {
+  const { actions } = card()
+  const name = screen.getByLabelText(copy.fieldNewPerson)
+  fireEvent.change(name, { target: { value: 'Pip' } })
+  pressEnter(name, { reported: false })
+  expect(actions.addPerson).not.toHaveBeenCalled()
+})
+
+it('a form with one button still saves on Enter', async () => {
+  const { actions, answer } = card()
+  fireEvent.click(button(copy.rename))
+  const name = screen.getByLabelText(copy.fieldHouseholdName)
+  fireEvent.change(name, { target: { value: 'The Smiths' } })
+  pressEnter(name)
+  expect(actions.renameHousehold).toHaveBeenCalledOnce()
+  expect(actions.renameHousehold.mock.calls[0][2].get('name')).toBe('The Smiths')
+  await answer({ ok: true })
+})
+
 it('Rename changes the household name', async () => {
   const { actions, answer } = card()
   fireEvent.click(button(copy.rename))

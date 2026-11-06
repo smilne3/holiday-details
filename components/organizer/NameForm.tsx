@@ -1,12 +1,28 @@
 'use client'
 
-import { startTransition, useActionState, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  startTransition,
+  useActionState,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { copy } from '@/lib/copy'
 import type { Result } from '@/lib/types'
 
 // The organizer page's forms: a name, any other fields passed as children (a person's household),
 // and one or more buttons. A button with a name and value sends them too, so "Add an adult" and
-// "Add a kid" can share one name field; pressing Enter sends the first button's.
+// "Add a kid" can share one name field.
+//
+// With one button, Enter saves, as anywhere. With more than one, Enter in the name field (or Go on
+// a phone's keyboard) does nothing, and the organizer taps the one they mean: a browser would press
+// the first, and a kid typed and entered would become an adult with a live link. Keyboards differ,
+// so there are two guards. Enter is cancelled where the keyboard reports it. And the first submit
+// button, which is the one a browser presses for Enter, is a hidden, disabled one, so it presses
+// nothing.
 //
 // As in ItemForm, it submits from onSubmit rather than <form action>, so a refused save keeps what
 // was typed; the fields clear only once the server says it saved. One save at a time: a second tap
@@ -51,6 +67,12 @@ export function NameForm({
     null,
   )
 
+  const several = buttons.length > 1
+
+  function noEnter(e: KeyboardEvent<HTMLFormElement>) {
+    if (several && e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault()
+  }
+
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (busy.current) return
@@ -62,7 +84,8 @@ export function NameForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} className="space-y-3">
+    <form ref={formRef} onSubmit={submit} onKeyDown={noEnter} className="space-y-3">
+      {several && <button type="submit" disabled hidden />}
       <div>
         <label htmlFor={`${id}-name`} className="block text-sm font-medium text-neutral-700">
           {label}
