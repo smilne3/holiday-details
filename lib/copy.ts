@@ -76,9 +76,9 @@ export const copy = {
   yes: 'Yes',
   no: 'No',
   cantDelete: "Can't remove someone who has a wish list or is buying gifts.",
-  // The owner's own words, pasted into an email sent from their own address. It ends at "Love you
-  // all," and the owner signs it. The repo is public, so it names no one but the person it's for:
-  // the kids' line is general on purpose.
+  // The owner's own words, pasted into an email to one person, sent from the owner's own address. It
+  // ends at "Love you," and the owner signs it. The repo is public, so it names no one but the person
+  // it's for: the kids' line is general on purpose.
   invitation: (name: string, link: string) =>
     [
       `Hi ${name}!`,
@@ -87,7 +87,7 @@ export const copy = {
       "You won't be able to see who's buying things from your own list, so the surprises stay surprises! If you have kiddos, you can manage their wish lists too.",
       `I kept it intentionally low-tech. There's nothing to download, no account to create, and no password to remember. Just tap this link:\n${link}`,
       "And hang on to this email! Whenever you want to check the lists, just come back to this link (or bookmark the page for easy access). One thing to point out: Everyone has personalized links, so don't forward it to spouses.",
-      'Love you all,',
+      'Love you,',
     ].join('\n\n'),
 
   // The rest of the organizer page.

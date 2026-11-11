@@ -94,7 +94,7 @@ it("copy.invitation('Ben', 'https://x.test/p/abc') is the owner's text, word for
       "I kept it intentionally low-tech. There's nothing to download, no account to create, and no password to remember. Just tap this link:\n" +
       'https://x.test/p/abc\n\n' +
       'And hang on to this email! Whenever you want to check the lists, just come back to this link (or bookmark the page for easy access). One thing to point out: Everyone has personalized links, so don\'t forward it to spouses.\n\n' +
-      'Love you all,',
+      'Love you,',
   )
 })
 
