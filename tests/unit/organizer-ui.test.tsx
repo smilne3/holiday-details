@@ -85,9 +85,16 @@ afterEach(() => {
 
 const benLink = () => `${window.location.origin}/p/${benToken}`
 
-it("copy.invitation('Ben', 'https://x.test/p/abc') is the exact text in Task 3", () => {
+it("copy.invitation('Ben', 'https://x.test/p/abc') is the owner's text, word for word", () => {
   expect(copy.invitation('Ben', 'https://x.test/p/abc')).toBe(
-    "Hi Ben!\n\nThis year our wish lists are all in one place. Tap this link to see everyone's lists and add your own:\n\nhttps://x.test/p/abc\n\nKeep this email. Whenever you want to see the lists, just tap the link again. You can bookmark the page too if you like.\n\nThis link is just for you, so please don't forward it.",
+    "Hi Ben!\n\n" +
+      "You know how every year we email our Christmas lists around, then spend weeks texting/emailing back and forth to coordinate who's buying what, all while trying to keep it a secret from the person whose list it is? It's a lot of work just to make sure everyone gets something they want! As a product manager, I can't help but think there's got to be a better way. So, I built one!\n\n" +
+      'Introducing Family Wish Lists: a simple place where everyone\'s Christmas wishes live in one spot. You can add your own wishes (with links and prices, if you want), browse everyone else\'s lists, and tap "I\'ll buy this" on the items you\'re planning to get. That way, everyone knows what\'s been claimed and we avoid duplicate gifts.\n\n' +
+      "You won't be able to see who's buying things from your own list, so the surprises stay surprises! If you have kiddos, you can manage their wish lists too.\n\n" +
+      "I kept it intentionally low-tech. There's nothing to download, no account to create, and no password to remember. Just tap this link:\n" +
+      'https://x.test/p/abc\n\n' +
+      'And hang on to this email! Whenever you want to check the lists, just come back to this link (or bookmark the page for easy access). One thing to point out: Everyone has personalized links, so don\'t forward it to spouses.\n\n' +
+      'Love you all,',
   )
 })
 
