@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
 import {
   addItemAction,
+  addOffListAction,
   claimAction,
   removeItemAction,
+  deleteOffListAction,
   unclaimAction,
   updateItemAction,
+  updateOffListAction,
 } from '@/app/list/actions'
 import { ListView } from '@/components/ListView'
 import { NotSignedIn } from '@/components/NotSignedIn'
@@ -19,8 +22,8 @@ import { getViewer } from '@/lib/session'
 //
 // The organizer's name is for the notice a phone whose buttons never work shows (PageNotices).
 //
-// getListView decides what the viewer may see. On their own list it never reads claims, so none
-// can reach ListView's props, and so none can reach the browser.
+// getListView decides what the viewer may see. On their own list it never reads claims or off-list
+// gifts, so none can reach ListView's props, and so none can reach the browser.
 //
 // params is typed by hand rather than with PageProps, which exists only after `next build` or
 // `next typegen`, and CI type-checks before it builds.
@@ -42,6 +45,9 @@ export default async function ListPage({ params }: { params: Promise<{ personId:
         add: addItemAction,
         update: updateItemAction,
         remove: removeItemAction,
+        addOffList: addOffListAction,
+        updateOffList: updateOffListAction,
+        deleteOffList: deleteOffListAction,
       }}
     />
   )

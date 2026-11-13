@@ -33,7 +33,16 @@ afterEach(() => {
 // Made-up ids. The actions are never called.
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const never = () => new Promise<never>(() => {})
-const listActions = { claim: never, unclaim: never, add: never, update: never, remove: never }
+const listActions = {
+  claim: never,
+  unclaim: never,
+  add: never,
+  update: never,
+  remove: never,
+  addOffList: never,
+  updateOffList: never,
+  deleteOffList: never,
+}
 const organizerActions = {
   renameHousehold: never,
   addPerson: never,
@@ -54,23 +63,35 @@ const leoKept: ListViewData = {
     { id: id(12), name: 'Yo-yo', price: null, details: null, url: null, claim: { buyerName: 'Maya', mine: true } },
     { id: id(13), name: 'Sweater', price: null, details: null, url: null, claim: { buyerName: 'Priya', mine: false } },
   ],
+  // An off-list gift of Maya's, with its Edit and Remove, and one of Sam's, with neither.
+  offList: [
+    { id: id(21), name: 'Bike', price: null, details: null, url: null, buyerName: 'Maya', mine: true },
+    { id: id(22), name: 'Kite', price: null, details: null, url: null, buyerName: 'Sam', mine: false },
+  ],
 }
 
 // Every page with buttons, as its parts.
 const pages: [string, ReactElement][] = [
   [
-    "a kid's list, with claims and the add form",
+    "a kid's list, with claims, the add form and off-list gifts",
     <ListView key="l" view={leoKept} viewerName="Maya" homeHref="/p/dev-maya" organizerName="Maya" actions={listActions} />,
   ],
   [
-    "Gifts I'm buying",
+    "Gifts I'm buying, with an off-list gift",
     <BuyingView
       key="b"
-      groups={[{ recipient: { id: id(1), name: 'Leo' }, items: [{ id: id(12), name: 'Yo-yo', price: null, details: null, url: null, note: null }] }]}
+      groups={[
+        {
+          recipient: { id: id(1), name: 'Leo' },
+          items: [{ id: id(12), name: 'Yo-yo', price: null, details: null, url: null, note: null }],
+          offList: [{ id: id(21), name: 'Bike', price: null, details: null, url: null }],
+        },
+      ]}
       viewerName="Maya"
       homeHref="/p/dev-maya"
       organizerName="Maya"
       unclaim={never}
+      deleteOffList={never}
     />,
   ],
   [

@@ -50,6 +50,15 @@ export const copy = {
   badLink: "That link doesn't look right. Copy it from the shop's page and paste it again.",
   notAllowed: "You can't change this list.",
 
+  // Off-list gifts (GLOSSARY.md): a gift a buyer adds to someone's list, which everyone but that
+  // person sees. The owner chose these words, and no note under the heading: the family knows not to
+  // mention an off-list gift. The form's note is for the buyer, who can't otherwise tell who'll see it.
+  offListHeading: (name: string) => `Off-list gifts for ${name}`,
+  addOffList: (name: string) => `Add an off-list gift for ${name}`,
+  offListFormNote: (name: string) => `${name} won't see this. Everyone else will see that you're buying it.`,
+  addGift: 'Add gift',
+  offListTag: 'Off-list gift',
+
   forRecipient: (n: string) => `For ${n}`,
   removedFrom: (n: string) => `Removed from ${possessive(n)} list`,
   changedAfterClaim: 'Changed after you claimed it',

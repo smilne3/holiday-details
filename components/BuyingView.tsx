@@ -1,27 +1,34 @@
 'use client'
 
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { PageNotices } from '@/components/PageNotices'
+import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import { shownPrice } from '@/lib/format'
 import { pageIsLeaving } from '@/lib/stale-page'
-import type { BuyingGroup } from '@/lib/types'
+import type { BuyingGroup, Result } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
-// Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
-// it's for, with its price, details and link, and Undo. The price sits under the name, as on a wish
-// list. getBuying hands over the viewer's own claims and no one else's.
+// Gifts I'm buying: everything the viewer tapped "I'll buy this" on, and every off-list gift they
+// added, under a heading for each person it's for, with its price, details and link, and Undo. The
+// price sits under the name, as on a wish list. getBuying hands over the viewer's own claims and
+// off-list gifts, and no one else's.
 //
 // An item its owner took off their list, or edited, after it was claimed stays here with a note
 // ("Removed from Leo's list", "Changed after you claimed it"), so the buyer isn't left holding a
 // gift nobody wants. Only the buyer ever sees the note.
 //
-// An Undo the server confirmed takes the gift off this page straight away; the action's refresh()
-// then re-renders the page without it. When a refresh hands over new groups the page follows them,
-// so a gift claimed again in another tab is never left hidden.
+// The viewer's off-list gifts (GLOSSARY.md) come after the items they claimed for that person,
+// tagged "Off-list gift". No one else can change one, so none has a note.
+//
+// A claim's Undo, once the server confirms it, takes the gift off this page straight away; the
+// action's refresh() then re-renders the page without it. An off-list gift's Undo deletes the gift,
+// so it asks first ("Remove this?") and reads Saving… until the refresh takes it away. When a
+// refresh hands over new groups the page follows them, so a gift claimed again in another tab is
+// never left hidden.
 //
 // PageNotices waits at the foot of the page, for a phone where the buttons never come to life.
 //
@@ -33,12 +40,14 @@ export function BuyingView({
   homeHref,
   organizerName,
   unclaim,
+  deleteOffList,
 }: {
   groups: BuyingGroup[]
   viewerName: string
   homeHref: string
   organizerName: string | null
   unclaim: (itemId: string) => Promise<void>
+  deleteOffList: (giftId: string) => Promise<Result>
 }) {
   const [undone, setUndone] = useState<ReadonlySet<string>>(new Set())
   const [shownGroups, setShownGroups] = useState(groups)
@@ -49,7 +58,7 @@ export function BuyingView({
 
   const left = groups
     .map(group => ({ ...group, items: group.items.filter(item => !undone.has(item.id)) }))
-    .filter(group => group.items.length > 0)
+    .filter(group => group.items.length > 0 || group.offList.length > 0)
 
   const onUndone = (itemId: string) => setUndone(prev => new Set(prev).add(itemId))
 
@@ -67,32 +76,27 @@ export function BuyingView({
       {left.length === 0 ? (
         <p className="mt-5 text-neutral-600">{copy.buyingEmpty}</p>
       ) : (
-        left.map(({ recipient, items }) => (
+        left.map(({ recipient, items, offList }) => (
           <section key={recipient.id} aria-labelledby={`for-${recipient.id}`} className="mt-5">
             <h2 id={`for-${recipient.id}`} className="mb-2 text-lg font-bold text-buying-ink wrap-anywhere">
               {copy.forRecipient(recipient.name)}
             </h2>
             <ul className="space-y-2.5">
               {items.map(item => (
-                <li
+                <Gift
                   key={item.id}
-                  className="rounded-xl border border-item-line bg-white px-3.5 py-3 wrap-anywhere md:flex md:items-center md:justify-between md:gap-x-4"
+                  gift={item}
+                  tag={item.note && (item.note === 'removed' ? copy.removedFrom(recipient.name) : copy.changedAfterClaim)}
                 >
-                  <div className="min-w-0">
-                    <p id={`gift-${item.id}`} className="font-semibold text-neutral-900">
-                      {item.name}
-                    </p>
-                    {item.price && <p className="mt-0.5 text-sm text-neutral-600">{shownPrice(item.price)}</p>}
-                    {item.note && (
-                      <p className="mt-1 w-fit rounded-md bg-buying px-2 py-0.5 text-sm font-semibold text-buying-ink">
-                        {item.note === 'removed' ? copy.removedFrom(recipient.name) : copy.changedAfterClaim}
-                      </p>
-                    )}
-                    {item.details && <p className="mt-0.5 text-sm text-neutral-600">{item.details}</p>}
-                    {item.url && <ShopLink url={item.url} />}
-                  </div>
                   <Undo itemId={item.id} unclaim={unclaim} onUndone={onUndone} />
-                </li>
+                </Gift>
+              ))}
+              {offList.map(gift => (
+                <Gift key={gift.id} gift={gift} tag={copy.offListTag}>
+                  <div className="-ml-1 flex flex-wrap items-center gap-x-2 md:ml-0 md:shrink-0 md:justify-end">
+                    <RemoveItem itemId={gift.id} remove={deleteOffList} label={copy.undo} describedBy={`gift-${gift.id}`} />
+                  </div>
+                </Gift>
               ))}
             </ul>
           </section>
@@ -100,6 +104,36 @@ export function BuyingView({
       )}
       <PageNotices organizerName={organizerName} />
     </main>
+  )
+}
+
+// One gift's card: its name, its price, a tag when there's something to say about it (a note on a
+// claim, or that it's an off-list gift), its details and link, and then its Undo. The name's id
+// describes the Undo, so a screen reader says which gift each one is for.
+function Gift({
+  gift,
+  tag,
+  children,
+}: {
+  gift: { id: string; name: string; price: string | null; details: string | null; url: string | null }
+  tag: string | null
+  children: ReactNode
+}) {
+  return (
+    <li className="rounded-xl border border-item-line bg-white px-3.5 py-3 wrap-anywhere md:flex md:items-center md:justify-between md:gap-x-4">
+      <div className="min-w-0">
+        <p id={`gift-${gift.id}`} className="font-semibold text-neutral-900">
+          {gift.name}
+        </p>
+        {gift.price && <p className="mt-0.5 text-sm text-neutral-600">{shownPrice(gift.price)}</p>}
+        {tag && (
+          <p className="mt-1 w-fit rounded-md bg-buying px-2 py-0.5 text-sm font-semibold text-buying-ink">{tag}</p>
+        )}
+        {gift.details && <p className="mt-0.5 text-sm text-neutral-600">{gift.details}</p>}
+        {gift.url && <ShopLink url={gift.url} />}
+      </div>
+      {children}
+    </li>
   )
 }
 
