@@ -35,6 +35,7 @@ const leoKept: ListViewData = {
     { ...yoyo, claim: { buyerName: 'Grandma', mine: false } },
     { ...lego, claim: null },
   ],
+  offList: [],
 }
 
 // Leo's list as Grandma sees it: the yo-yo is hers.

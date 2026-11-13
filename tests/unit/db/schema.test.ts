@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import { seedDevItems, type Family } from '@/db/dev-family'
 import { createPgliteDb } from '@/lib/db/pglite'
 import { isUniqueViolation, type Db } from '@/lib/db/types'
-import { claimRow, itemRow, testDb } from '@/tests/helpers/db'
+import { claimRow, itemRow, offListRow, testDb } from '@/tests/helpers/db'
 
 // SQLSTATEs, so each rejection is the constraint under test and not, say, a typo in the insert.
 const CHECK_VIOLATION = '23514'
@@ -71,6 +71,33 @@ it('a price is optional text of up to 40 characters', async () => {
   expect(await db.query('select id, price from items order by price nulls first')).toEqual([
     { id: none, price: null },
     { id: ok, price: '💵'.repeat(40) },
+  ])
+})
+
+// db/migrations/003_off_list_gifts.sql. An off-list gift has an item's fields and limits, and its
+// buyer is on the row: there's no claim for it.
+it("an off-list gift has an item's limits, and no one gives one to themselves", async () => {
+  const gift = (name: string, extra: { details?: string; url?: string; price?: string } = {}) =>
+    offListRow(db, f.grandma.id, f.ben.id, name, extra)
+  const longest = await gift('c'.repeat(200), {
+    price: '💵'.repeat(40),
+    details: 'd'.repeat(500),
+    url: 'https://x.com',
+  })
+  for (const [name, extra] of [
+    ['   ', {}],
+    ['c'.repeat(201), {}],
+    ['Cooking class', { price: 'x'.repeat(41) }],
+    ['Cooking class', { details: 'd'.repeat(501) }],
+    ['Cooking class', { url: 'javascript:alert(1)' }],
+  ] as const) {
+    await expect(gift(name, extra)).rejects.toMatchObject({ code: CHECK_VIOLATION })
+  }
+  await expect(offListRow(db, f.ben.id, f.ben.id, 'Cooking class')).rejects.toMatchObject({
+    code: CHECK_VIOLATION,
+  })
+  expect(await db.query('select id, recipient_id, buyer_id from off_list_gifts')).toEqual([
+    { id: longest, recipient_id: f.grandma.id, buyer_id: f.ben.id },
   ])
 })
 

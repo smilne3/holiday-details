@@ -54,6 +54,11 @@ const leoKept: ListViewData = {
     { id: id(12), name: 'Yo-yo', price: null, details: null, url: null, claim: { buyerName: 'Maya', mine: true } },
     { id: id(13), name: 'Sweater', price: null, details: null, url: null, claim: { buyerName: 'Priya', mine: false } },
   ],
+  // An off-list gift of Maya's, with its Edit and Remove, and one of Sam's, with neither.
+  offList: [
+    { id: id(21), name: 'Bike', price: null, details: null, url: null, buyerName: 'Maya', mine: true },
+    { id: id(22), name: 'Kite', price: null, details: null, url: null, buyerName: 'Sam', mine: false },
+  ],
 }
 
 // Every page with buttons, as its parts.

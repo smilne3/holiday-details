@@ -65,16 +65,37 @@ export type OwnListItem = ItemFields & { claim?: never }
 // An item on anyone else's list: who's buying it, or null when no one is yet.
 export type ListItem = ItemFields & { claim: { buyerName: string; mine: boolean } | null }
 
+// An off-list gift on anyone else's list (GLOSSARY.md): a gift its buyer added that isn't one of the
+// list owner's wishes. It always has its buyer, and mine marks the viewer's own, which only they
+// can change or remove.
+export type OffListGift = ItemFields & { buyerName: string; mine: boolean }
+
 // A wish list as one viewer sees it, by mode:
-//   - 'own' is the viewer's list: they edit it, can't claim from it, and its items carry no claims
+//   - 'own' is the viewer's list: they edit it, can't claim from it, and its items carry no claims.
+//     It has no offList key at all, so no off-list gift for them can reach their page.
 //   - 'kept' is one of their kids' lists: they edit it and claim from it, and see who's buying what
 //   - 'other' is anyone else's, a spouse's included: they claim from it and see who's buying what
 // keptBy names the adults who keep a kid's list ("Ben & Maya"), and is null for an adult's list or
-// a kid's household with no adults.
+// a kid's household with no adults. offList is every off-list gift for the list's owner, in the
+// order they were added, and is empty when there are none.
 export type ListViewData =
-  | (ListOwner & { mode: 'own'; keptBy: null; canEdit: true; canClaim: false; items: OwnListItem[] })
-  | (ListOwner & { mode: 'kept'; keptBy: string | null; canEdit: true; canClaim: true; items: ListItem[] })
-  | (ListOwner & { mode: 'other'; keptBy: string | null; canEdit: false; canClaim: true; items: ListItem[] })
+  | (ListOwner & { mode: 'own'; keptBy: null; canEdit: true; canClaim: false; items: OwnListItem[]; offList?: never })
+  | (ListOwner & {
+      mode: 'kept'
+      keptBy: string | null
+      canEdit: true
+      canClaim: true
+      items: ListItem[]
+      offList: OffListGift[]
+    })
+  | (ListOwner & {
+      mode: 'other'
+      keptBy: string | null
+      canEdit: false
+      canClaim: true
+      items: ListItem[]
+      offList: OffListGift[]
+    })
 
 interface ListOwner {
   owner: { id: string; name: string; kind: PersonKind }

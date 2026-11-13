@@ -78,6 +78,11 @@ it("someone else's list wraps a long item, its price, details and link, the owne
       { id: '00000000-0000-4000-8000-0000000000c2', name: item, price, details, url, claim: { buyerName: person, mine: true } },
       { id: '00000000-0000-4000-8000-0000000000c3', name: item, price, details, url, claim: null },
     ],
+    // Off-list gifts, the viewer's own and someone else's, wrap as items do.
+    offList: [
+      { id: '00000000-0000-4000-8000-0000000000e1', name: item, price, details, url, buyerName: person, mine: false },
+      { id: '00000000-0000-4000-8000-0000000000e2', name: item, price, details, url, buyerName: person, mine: true },
+    ],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
