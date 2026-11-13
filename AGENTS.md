@@ -30,4 +30,4 @@ The exception is `app/p/[token]/page.tsx`, the home page at a personal link, and
 
 A client control that calls a Server Action passes any failure to `pageIsLeaving` in `lib/stale-page.ts` before reporting it. That reloads a page loaded before a deploy, and stays quiet while a signed-out viewer is redirected.
 
-Claims on a viewer's own list stay on the server. `getListView` doesn't read them for the list's owner, so they can't reach props, HTML or flight data. Build any new read the same way: decide on the server, and send only what this viewer may see.
+Claims and off-list gifts on a viewer's own list stay on the server. `getListView` doesn't read either for the list's owner, so they can't reach props, HTML or flight data. Off-list gifts have their own table so that a read for the list's owner never meets one (`docs/adr/0001-off-list-gifts-in-their-own-table.md`). Build any new read the same way: decide on the server, and send only what this viewer may see.
