@@ -39,7 +39,7 @@ describe('the made-up family', () => {
     const first = await ids(a)
     expect(first.people).toHaveLength(9)
     expect(first.items).toHaveLength(20)
-    expect(first.offList).toHaveLength(1)
+    expect(first.offList).toHaveLength(2)
     expect(await ids(b)).toEqual(first)
   })
 
@@ -70,17 +70,22 @@ describe('the made-up family', () => {
     const [sweater] = await a.query<{ id: string }>("select id from items where name = 'Sweater'")
     expect(sweater.id).toBe('00000000-0000-4000-8000-000000003002')
     // Off-list gifts have ids of their own, 4xxx.
-    expect(await a.query('select id from off_list_gifts')).toEqual([{ id: id(4001) }])
+    expect(await a.query('select id from off_list_gifts order by id')).toEqual([{ id: id(4001) }, { id: id(4002) }])
   })
 
-  // A preview shows an off-list gift without anyone setting one up: Sam's for Leo, which Ben and
-  // Maya, Leo's keepers, see on his list.
-  it("seeds one off-list gift, Sam's kite for Leo", async () => {
+  // A preview shows off-list gifts without anyone setting one up. Sam's kite for Leo is on a kid's
+  // list, which Ben and Maya keep. Sam's tea for Grandma is in every copy of the family, so a phone
+  // check of Grandma's own list always has one for her to not see, whichever copy answers.
+  it("seeds two off-list gifts: Sam's kite for Leo, and Sam's tea for Grandma", async () => {
     expect(
       await a.query(
         `select g.name, g.price, r.name as recipient, b.name as buyer
-           from off_list_gifts g join people r on r.id = g.recipient_id join people b on b.id = g.buyer_id`,
+           from off_list_gifts g join people r on r.id = g.recipient_id join people b on b.id = g.buyer_id
+          order by g.id`,
       ),
-    ).toEqual([{ name: 'Kite', price: '25', recipient: 'Leo', buyer: 'Sam' }])
+    ).toEqual([
+      { name: 'Kite', price: '25', recipient: 'Leo', buyer: 'Sam' },
+      { name: 'Tea sampler', price: '$35', recipient: 'Grandma', buyer: 'Sam' },
+    ])
   })
 })

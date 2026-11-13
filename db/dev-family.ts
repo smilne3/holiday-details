@@ -76,10 +76,13 @@ export async function seedDevItems(db: Db, f: Family): Promise<void> {
   await item(f.ollie, 'Rain boots', { details: 'Kids size 12' })
   await item(f.ollie, 'Dinosaur book')
 
-  // One off-list gift, so a preview shows one with no setting up: Sam's for Leo, seen by Ben and
-  // Maya, his keepers, and by everyone else but Leo. It has an id range of its own, so no item moved.
+  // Two off-list gifts, so a preview shows them with no setting up. Sam's kite for Leo is on a kid's
+  // list, seen by Ben and Maya, his keepers. Sam's tea for Grandma means her own list always has one
+  // to leave out: a preview's server instances each seed their own copy, so a gift added on a phone
+  // may not be in the copy that answers Grandma. They have an id range of their own, so no item moved.
   const gid = fixedIds(4)
   await offListGift(db, gid(), f.leo, f.sam, 'Kite', { price: '25' })
+  await offListGift(db, gid(), f.grandma, f.sam, 'Tea sampler', { price: '$35' })
 }
 
 // Fixed ids, the same in every copy of the family. A Vercel preview can run several server
