@@ -107,7 +107,13 @@ it('My wish list wraps a long item, its price and its details', () => {
 it("Gifts I'm buying wraps a long item, its price, details and link, and who it's for", () => {
   render(
     <BuyingView
-      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, price, details, url, note: 'removed' }] }]}
+      groups={[
+        {
+          recipient: { id: ids.owner, name: person },
+          items: [{ id: ids.item, name: item, price, details, url, note: 'removed' }],
+          offList: [{ id: '00000000-0000-4000-8000-0000000000e1', name: item, price, details, url }],
+        },
+      ]}
       viewerName={person}
       homeHref="/p/dev-maya"
       organizerName={person}

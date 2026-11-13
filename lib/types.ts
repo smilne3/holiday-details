@@ -107,16 +107,12 @@ interface ListOwner {
 // the answer can't give a claim away.
 export type ClaimResult = 'claimed' | 'taken' | 'gone' | 'not-allowed'
 
-// One person's gifts in the viewer's Gifts I'm buying. note says what the owner did after the
-// claim: took the item off the list, or edited it. A removed item stays until the buyer undoes it.
+// One person's gifts in the viewer's Gifts I'm buying. items are the viewer's claims on that
+// person's list: note says what the owner did after the claim, took the item off the list or edited
+// it, and a removed item stays until the buyer undoes it. offList are the off-list gifts the viewer
+// is buying them, which no one else can change, so they carry no note. Either may be empty, not both.
 export interface BuyingGroup {
   recipient: { id: string; name: string }
-  items: {
-    id: string
-    name: string
-    price: string | null
-    details: string | null
-    url: string | null
-    note: 'removed' | 'changed' | null
-  }[]
+  items: (ItemFields & { note: 'removed' | 'changed' | null })[]
+  offList: ItemFields[]
 }

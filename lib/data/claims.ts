@@ -27,9 +27,10 @@ export async function unclaimItem(db: Db, viewer: Viewer, itemId: string): Promi
   await db.query('delete from claims where item_id = $1 and buyer_id = $2', [itemId, viewer.id])
 }
 
-// Gifts I'm buying: the viewer's own claims and no one else's, grouped by recipient in name order,
-// and each group in the order of that person's list. Items removed since they were claimed stay,
-// noted, so the buyer finds out.
+// Gifts I'm buying: the viewer's own claims and off-list gifts, and no one else's, grouped by
+// recipient in name order. In each group the claimed items come first, in the order of that
+// person's list, then the off-list gifts in the order they were added. Items removed since they
+// were claimed stay, noted, so the buyer finds out.
 export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> {
   const rows = await db.query<{
     recipient_id: string
@@ -41,14 +42,21 @@ export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> 
     url: string | null
     removed: boolean
     changed: boolean
+    off_list: boolean
   }>(
     `select p.id as recipient_id, p.name as recipient_name, i.id, i.name, i.price, i.details, i.url,
-            i.removed_at is not null as removed, i.updated_at > c.created_at as changed
+            i.removed_at is not null as removed, i.updated_at > c.created_at as changed,
+            false as off_list, i.created_at
        from claims c
        join items i on i.id = c.item_id
        join people p on p.id = i.owner_id
       where c.buyer_id = $1
-      order by p.name, p.id, i.created_at, i.id`,
+     union all
+     select p.id, p.name, g.id, g.name, g.price, g.details, g.url, false, false, true, g.created_at
+       from off_list_gifts g
+       join people p on p.id = g.recipient_id
+      where g.buyer_id = $1
+     order by recipient_name, recipient_id, off_list, created_at, id`,
     [viewer.id],
   )
 
@@ -56,18 +64,16 @@ export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> 
   for (const r of rows) {
     let group = groups.at(-1)
     if (group?.recipient.id !== r.recipient_id) {
-      group = { recipient: { id: r.recipient_id, name: r.recipient_name }, items: [] }
+      group = { recipient: { id: r.recipient_id, name: r.recipient_name }, items: [], offList: [] }
       groups.push(group)
     }
-    group.items.push({
-      id: r.id,
-      name: r.name,
-      price: r.price,
-      details: r.details,
-      url: r.url,
+    const gift = { id: r.id, name: r.name, price: r.price, details: r.details, url: r.url }
+    if (r.off_list) {
+      group.offList.push(gift)
+    } else {
       // Edited and then removed reads as removed: that's the one the buyer must act on.
-      note: r.removed ? 'removed' : r.changed ? 'changed' : null,
-    })
+      group.items.push({ ...gift, note: r.removed ? 'removed' : r.changed ? 'changed' : null })
+    }
   }
   return groups
 }

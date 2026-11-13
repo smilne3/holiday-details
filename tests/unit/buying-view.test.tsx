@@ -21,8 +21,8 @@ const yoyo = { id: '00000000-0000-4000-8000-0000000000c3', name: 'Yo-yo', price:
 const scarf = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Scarf', price: 'about $25', details: 'Not wool', url: null, note: 'changed' as const }
 
 const grandmas: BuyingGroup[] = [
-  { recipient: leo, items: [sweater, yoyo] },
-  { recipient: priya, items: [scarf] },
+  { recipient: leo, items: [sweater, yoyo], offList: [] },
+  { recipient: priya, items: [scarf], offList: [] },
 ]
 
 // The unclaim fake answers only when the test says so, the way a slow network would.
@@ -79,7 +79,7 @@ it('a price shows under the name, as typed or with $ added; no price, no line', 
 })
 
 it("a stored link that isn't a web address shows no link, and the page still shows", () => {
-  show([{ recipient: leo, items: [{ ...sweater, url: 'https://shop .com' }, yoyo] }])
+  show([{ recipient: leo, items: [{ ...sweater, url: 'https://shop .com' }, yoyo], offList: [] }])
   within(row('Sweater')).getByText('Green, size XS')
   expect(within(row('Sweater')).queryByRole('link')).toBeNull()
   undoIn('Sweater')
@@ -166,7 +166,7 @@ it('follows the page when a refresh brings a gift back, so nothing it holds is h
   expect(screen.queryByText('Yo-yo')).toBeNull()
 
   // Claimed again in another tab, then this page refreshed.
-  rerender([{ recipient: leo, items: [sweater, { ...yoyo, note: null }] }])
+  rerender([{ recipient: leo, items: [sweater, { ...yoyo, note: null }], offList: [] }])
   screen.getByText('Yo-yo')
   undoIn('Yo-yo')
 })

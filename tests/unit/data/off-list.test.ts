@@ -2,10 +2,13 @@
 import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
+import { getBuying } from '@/lib/data/claims'
 import { addOffListGift, getListView, removeOffListGift, updateOffListGift } from '@/lib/data/lists'
+import { deletePerson } from '@/lib/data/organizer'
+import { getHome } from '@/lib/data/people'
 import type { Db } from '@/lib/db/types'
 import type { ItemInput, ListViewData, OffListGift } from '@/lib/types'
-import { itemRow, offListRow, testDb } from '@/tests/helpers/db'
+import { claimRow, itemRow, offListRow, testDb } from '@/tests/helpers/db'
 
 // Off-list gifts (#21, docs/adr/0001-off-list-gifts-in-their-own-table.md): a buyer adds a gift to
 // someone's list that isn't one of their wishes. Everyone but that person sees it, and who's buying.
@@ -228,4 +231,62 @@ it("only the buyer removes an off-list gift: not its recipient, a spouse, or the
   expect(await stored(forGrandma)).not.toBeNull()
   expect(await stored(forLeo)).not.toBeNull()
   expect(await removeOffListGift(db, f.ben, 'not-a-uuid')).toEqual(notAllowed)
+})
+
+it("Ben's home counts his off-list gifts with his claims; Grandma's home is exactly the same", async () => {
+  await itemRow(db, f.grandma.id, 'Jigsaw puzzle')
+  const grandmaBefore = await getHome(db, f.grandma)
+  const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
+  await claimRow(db, yoyo, f.ben.id)
+
+  await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
+  await offListRow(db, f.ollie.id, f.ben.id, 'Kite')
+  expect(await getHome(db, f.ben)).toMatchObject({ myItemCount: 0, buyingCount: 3 })
+  expect(await getHome(db, f.grandma)).toStrictEqual(grandmaBefore)
+  expect(grandmaBefore).toMatchObject({ myItemCount: 1, buyingCount: 0 })
+})
+
+it("Gifts I'm buying lists Ben's off-list gifts under each person, after the items he claimed", async () => {
+  const yoyo = await itemRow(db, f.leo.id, 'Yo-yo')
+  await claimRow(db, yoyo, f.ben.id)
+  const kite = await offListRow(db, f.leo.id, f.ben.id, 'Kite', { price: '25', url: 'https://kites.example.com' })
+  const cooking = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class', { details: 'Saturday mornings' })
+  // Someone else's off-list gift isn't Ben's to buy.
+  await offListRow(db, f.leo.id, f.sam.id, 'Atlas')
+
+  expect(await getBuying(db, f.ben)).toEqual([
+    {
+      recipient: { id: f.grandma.id, name: 'Grandma' },
+      items: [],
+      offList: [{ id: cooking, name: 'Cooking class', price: null, details: 'Saturday mornings', url: null }],
+    },
+    {
+      recipient: { id: f.leo.id, name: 'Leo' },
+      items: [{ id: yoyo, name: 'Yo-yo', price: null, details: null, url: null, note: null }],
+      offList: [{ id: kite, name: 'Kite', price: '25', details: null, url: 'https://kites.example.com' }],
+    },
+  ])
+  expect(await getBuying(db, f.sam)).toEqual([
+    {
+      recipient: { id: f.leo.id, name: 'Leo' },
+      items: [],
+      offList: [{ id: expect.any(String), name: 'Atlas', price: null, details: null, url: null }],
+    },
+  ])
+  expect(await getBuying(db, f.grandma)).toEqual([])
+})
+
+it("the organizer can't remove someone who is buying an off-list gift, or someone one is for", async () => {
+  const cantDelete = { ok: false, error: copy.cantDelete }
+  // Ivy and Grandpa have nothing on their lists and buy nothing, until Grandpa buys Ivy a kite.
+  await offListRow(db, f.ivy.id, f.grandpa.id, 'Kite')
+  expect(await deletePerson(db, f.maya, f.ivy.id)).toEqual(cantDelete)
+  expect(await deletePerson(db, f.maya, f.grandpa.id)).toEqual(cantDelete)
+  expect(await db.query('select count(*)::int as n from people where id in ($1, $2)', [f.ivy.id, f.grandpa.id])).toEqual([
+    { n: 2 },
+  ])
+
+  await db.query('delete from off_list_gifts')
+  expect(await deletePerson(db, f.maya, f.ivy.id)).toEqual(ok)
+  expect(await deletePerson(db, f.maya, f.grandpa.id)).toEqual(ok)
 })

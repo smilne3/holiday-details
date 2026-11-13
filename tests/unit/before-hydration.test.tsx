@@ -71,7 +71,13 @@ const pages: [string, ReactElement][] = [
     "Gifts I'm buying",
     <BuyingView
       key="b"
-      groups={[{ recipient: { id: id(1), name: 'Leo' }, items: [{ id: id(12), name: 'Yo-yo', price: null, details: null, url: null, note: null }] }]}
+      groups={[
+        {
+          recipient: { id: id(1), name: 'Leo' },
+          items: [{ id: id(12), name: 'Yo-yo', price: null, details: null, url: null, note: null }],
+          offList: [{ id: id(21), name: 'Bike', price: null, details: null, url: null }],
+        },
+      ]}
       viewerName="Maya"
       homeHref="/p/dev-maya"
       organizerName="Maya"
