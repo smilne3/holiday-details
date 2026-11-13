@@ -75,12 +75,18 @@ export async function seedDevItems(db: Db, f: Family): Promise<void> {
   await item(f.ivy, 'Sticker book')
   await item(f.ollie, 'Rain boots', { details: 'Kids size 12' })
   await item(f.ollie, 'Dinosaur book')
+
+  // One off-list gift, so a preview shows one with no setting up: Sam's for Leo, seen by Ben and
+  // Maya, his keepers, and by everyone else but Leo. It has an id range of its own, so no item moved.
+  const gid = fixedIds(4)
+  await offListGift(db, gid(), f.leo, f.sam, 'Kite', { price: '25' })
 }
 
 // Fixed ids, the same in every copy of the family. A Vercel preview can run several server
 // instances, each seeding its own in-memory copy, and a link written by one (Leo's list, an item's
 // "I'll buy this") is often answered by another. With random ids, that other copy had never heard
-// of the list. Each kind of row gets its own range: households 1xxx, people 2xxx, items 3xxx.
+// of the list. Each kind of row gets its own range: households 1xxx, people 2xxx, items 3xxx, and
+// off-list gifts 4xxx.
 function fixedIds(kind: number): () => string {
   let n = 0
   return () => `00000000-0000-4000-8000-${String(kind * 1000 + ++n).padStart(12, '0')}`
@@ -118,6 +124,21 @@ async function addItem(db: Db, id: string, owner: Person, name: string, extra: I
     [id, owner.id, name, extra.details ?? null, extra.url ?? null, extra.price ?? null],
   )
   return id
+}
+
+async function offListGift(
+  db: Db,
+  id: string,
+  recipient: Person,
+  buyer: Person,
+  name: string,
+  extra: ItemExtra = {},
+): Promise<void> {
+  await db.query(
+    `insert into off_list_gifts (id, recipient_id, buyer_id, name, details, url, price)
+     values ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, recipient.id, buyer.id, name, extra.details ?? null, extra.url ?? null, extra.price ?? null],
+  )
 }
 
 async function claim(db: Db, itemId: string, buyer: Person): Promise<void> {
