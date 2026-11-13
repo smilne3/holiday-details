@@ -33,7 +33,16 @@ afterEach(() => {
 // Made-up ids. The actions are never called.
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const never = () => new Promise<never>(() => {})
-const listActions = { claim: never, unclaim: never, add: never, update: never, remove: never }
+const listActions = {
+  claim: never,
+  unclaim: never,
+  add: never,
+  update: never,
+  remove: never,
+  addOffList: never,
+  updateOffList: never,
+  removeOffList: never,
+}
 const organizerActions = {
   renameHousehold: never,
   addPerson: never,
@@ -64,7 +73,7 @@ const leoKept: ListViewData = {
 // Every page with buttons, as its parts.
 const pages: [string, ReactElement][] = [
   [
-    "a kid's list, with claims and the add form",
+    "a kid's list, with claims, the add form and off-list gifts",
     <ListView key="l" view={leoKept} viewerName="Maya" homeHref="/p/dev-maya" organizerName="Maya" actions={listActions} />,
   ],
   [

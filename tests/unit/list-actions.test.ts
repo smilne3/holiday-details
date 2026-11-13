@@ -2,17 +2,20 @@
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import {
   addItemAction,
+  addOffListAction,
   claimAction,
   removeItemAction,
+  removeOffListAction,
   unclaimAction,
   updateItemAction,
+  updateOffListAction,
 } from '@/app/list/actions'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { getURLFromRedirectError } from 'next/dist/client/components/redirect'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
-import { claimRow, itemRow, testDb } from '@/tests/helpers/db'
+import { claimRow, itemRow, offListRow, testDb } from '@/tests/helpers/db'
 
 // The actions run against the made-up family in PGlite. The cookie holds whichever token the test
 // sets, and refresh() is a spy: it can only run inside a real Server Action request.
@@ -240,4 +243,73 @@ it('an edit to an item taken off the list since the page loaded says so, and ref
     gone: true,
   })
   expect(refresh).toHaveBeenCalledOnce()
+})
+
+// Off-list gifts (#21): the same rules as the item actions, with the buyer from the cookie.
+const offListNames = async (recipientId: string) =>
+  (
+    await t.db.query<{ name: string; buyer_id: string }>(
+      'select name, buyer_id from off_list_gifts where recipient_id = $1 order by created_at, id',
+      [recipientId],
+    )
+  ).map(r => [r.name, r.buyer_id])
+
+it('the off-list actions send a signed-out request to /, and write and refresh nothing', async () => {
+  const cooking = await offListRow(t.db, f.grandma.id, f.ben.id, 'Cooking class')
+  for (const token of [undefined, 'not-a-real-token']) {
+    cookie.token = token
+    expect(await redirectedTo(addOffListAction(f.grandma.id, null, form({ name: 'Atlas', details: '', link: '' })))).toBe('/')
+    expect(await redirectedTo(updateOffListAction(cooking, null, form({ name: 'Pasta', details: '', link: '' })))).toBe('/')
+    expect(await redirectedTo(removeOffListAction(cooking))).toBe('/')
+  }
+  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
+  expect(refresh).not.toHaveBeenCalled()
+})
+
+it("addOffListAction: Ben adds one for Grandma as himself, and the page refreshes; Grandma can't", async () => {
+  as('dev-ben')
+  expect(
+    await addOffListAction(f.grandma.id, null, form({ name: 'Cooking class', price: '80', details: '', link: '' })),
+  ).toEqual({ ok: true })
+  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
+  expect(refresh).toHaveBeenCalledOnce()
+
+  as('dev-grandma')
+  expect(await addOffListAction(f.grandma.id, null, form({ name: 'Atlas', details: '', link: '' }))).toEqual({
+    ok: false,
+    error: copy.notAllowed,
+  })
+  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
+  expect(refresh).toHaveBeenCalledOnce()
+})
+
+it('updateOffListAction and removeOffListAction are for the buyer alone', async () => {
+  const cooking = await offListRow(t.db, f.grandma.id, f.ben.id, 'Cooking class')
+  for (const token of ['dev-grandma', 'dev-maya']) {
+    as(token)
+    expect(await updateOffListAction(cooking, null, form({ name: 'Pasta', details: '', link: '' }))).toEqual({
+      ok: false,
+      error: copy.notAllowed,
+    })
+    expect(await removeOffListAction(cooking)).toEqual({ ok: false, error: copy.notAllowed })
+  }
+  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
+  expect(refresh).not.toHaveBeenCalled()
+
+  as('dev-ben')
+  expect(await updateOffListAction(cooking, null, form({ name: 'Pasta class', details: '', link: '' }))).toEqual({
+    ok: true,
+  })
+  expect(await offListNames(f.grandma.id)).toEqual([['Pasta class', f.ben.id]])
+  expect(await removeOffListAction(cooking)).toEqual({ ok: true })
+  expect(await offListNames(f.grandma.id)).toEqual([])
+  expect(refresh).toHaveBeenCalledTimes(2)
+
+  // An edit to one removed in another tab is gone, and refreshes so it leaves the page.
+  expect(await updateOffListAction(cooking, null, form({ name: 'Pasta class', details: '', link: '' }))).toEqual({
+    ok: false,
+    error: copy.gone,
+    gone: true,
+  })
+  expect(refresh).toHaveBeenCalledTimes(3)
 })

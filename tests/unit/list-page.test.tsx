@@ -5,17 +5,20 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import ListPage from '@/app/list/[personId]/page'
 import {
   addItemAction,
+  addOffListAction,
   claimAction,
   removeItemAction,
+  removeOffListAction,
   unclaimAction,
   updateItemAction,
+  updateOffListAction,
 } from '@/app/list/actions'
 import type { ListActions } from '@/components/ListView'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
 import type { ListViewData } from '@/lib/types'
-import { claimRow, itemRow, testDb } from '@/tests/helpers/db'
+import { claimRow, itemRow, offListRow, testDb } from '@/tests/helpers/db'
 
 // The page gets the made-up family in PGlite, and the cookie holds whichever token the test sets.
 const dbRef = vi.hoisted(() => ({ db: undefined as Db | undefined }))
@@ -96,7 +99,7 @@ it("Maya's own list hands the page no claim at all, though Ben is buying one of 
 })
 
 // Each control gets the Server Action it names, and the page hands over nothing else.
-it('hands the list exactly the five list actions, each under its own name', async () => {
+it('hands the list exactly the eight list actions, each under its own name', async () => {
   cookie.token = 'dev-grandma'
   const element = (await page(f.leo.id)) as ReactElement<{ actions: ListActions }>
   const expected = {
@@ -105,8 +108,35 @@ it('hands the list exactly the five list actions, each under its own name', asyn
     add: addItemAction,
     update: updateItemAction,
     remove: removeItemAction,
+    addOffList: addOffListAction,
+    updateOffList: updateOffListAction,
+    removeOffList: removeOffListAction,
   }
   const actions = element.props.actions as unknown as Record<string, unknown>
   expect(Object.keys(actions).sort()).toEqual(Object.keys(expected).sort())
   for (const [name, action] of Object.entries(expected)) expect(actions[name], name).toBe(action)
+})
+
+// The surprise holds for off-list gifts (#21): Grandma's own list page, its props and its HTML, is
+// the same with one for her as without. Her props are what the browser is sent as flight data.
+it("Grandma's own list page is byte for byte the same with an off-list gift for her as without", async () => {
+  await itemRow(t.db, f.grandma.id, 'Jigsaw puzzle')
+  cookie.token = 'dev-grandma'
+  const render = async () => {
+    const element = (await page(f.grandma.id)) as ReactElement<{ view: ListViewData }>
+    return { props: JSON.stringify(element.props.view), markup: renderToStaticMarkup(element) }
+  }
+  const before = await render()
+
+  await offListRow(t.db, f.grandma.id, f.ben.id, 'Cooking class', { price: '80', details: 'Saturday mornings' })
+  const after = await render()
+  expect(after).toEqual(before)
+  expect(after.markup).not.toMatch(/Cooking|Ben|off-list/i)
+
+  // Maya, on the same list, sees it.
+  cookie.token = 'dev-maya'
+  const markup = renderToStaticMarkup((await page(f.grandma.id)) as ReactElement)
+  expect(markup).toContain('Cooking class')
+  expect(markup).toContain(html(copy.isBuying('Ben')))
+  expect(markup).toContain(html(copy.offListHeading('Grandma')))
 })

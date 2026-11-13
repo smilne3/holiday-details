@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ItemClaim } from '@/components/ItemClaim'
 import { ItemForm } from '@/components/ItemForm'
+import { OffListGifts } from '@/components/OffListGifts'
 import { PageNotices } from '@/components/PageNotices'
 import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
@@ -20,13 +21,19 @@ export interface ListActions {
   add: (ownerId: string, prev: Result | null, form: FormData) => Promise<Result>
   update: (itemId: string, prev: Result | null, form: FormData) => Promise<Result>
   remove: (itemId: string) => Promise<Result>
+  addOffList: (recipientId: string, prev: Result | null, form: FormData) => Promise<Result>
+  updateOffList: (giftId: string, prev: Result | null, form: FormData) => Promise<Result>
+  removeOffList: (giftId: string) => Promise<Result>
 }
 
 // One wish list, as the owner chose from the mockups (the spec's Screens section):
 //   - someone else's list: "I'll buy this" on each open item, and anyone else's claim greyed and
 //     struck through, reading "Priya is buying this"
-//   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind
+//   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind,
+//     and no off-list gift
 //   - your kid's list: both of the above
+//   - every list but your own ends with its off-list gifts (OffListGifts), after the add form on a
+//     kid's list
 //
 // Each item reads top to bottom: its name, then its price on a line of its own, then its details and
 // its shop's link. A price is shown as typed, except that a bare number gets a $ (lib/format.ts).
@@ -202,6 +209,15 @@ export function ListView({
             draftKey={`add-item:${view.owner.id}`}
           />
         </section>
+      )}
+      {view.mode !== 'own' && (
+        <OffListGifts
+          recipient={view.owner}
+          gifts={view.offList}
+          add={actions.addOffList}
+          update={actions.updateOffList}
+          remove={actions.removeOffList}
+        />
       )}
       <PageNotices organizerName={organizerName} />
     </main>

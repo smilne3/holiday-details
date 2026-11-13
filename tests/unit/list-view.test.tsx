@@ -51,6 +51,22 @@ const leoOther: ListViewData = {
   ],
 }
 
+// Grandma's list as Maya sees it: one item of her own, and an off-list gift Ben is buying her.
+const grandma = { id: '00000000-0000-4000-8000-0000000000a7', name: 'Grandma', kind: 'adult' as const }
+const jigsaw = { id: '00000000-0000-4000-8000-0000000000c5', name: 'Jigsaw puzzle', price: null, details: '1000 pieces', url: null }
+const cooking = { id: '00000000-0000-4000-8000-0000000000e1', name: 'Cooking class', price: '80', details: 'Saturday mornings', url: 'https://cooking.example.com/class' }
+const grandmaOther: ListViewData = {
+  owner: grandma,
+  mode: 'other',
+  keptBy: null,
+  canEdit: false,
+  canClaim: true,
+  items: [{ ...jigsaw, claim: null }],
+  offList: [{ ...cooking, buyerName: 'Ben', mine: false }],
+}
+// The same list as Ben sees it: the off-list gift is his.
+const grandmaAsBen: ListViewData = { ...grandmaOther, offList: [{ ...cooking, buyerName: 'Ben', mine: true }] }
+
 // Maya's own list. Her items carry no claim key at all.
 const mayaOwn: ListViewData = {
   owner: maya,
@@ -71,6 +87,9 @@ function fakeActions() {
     add: vi.fn<ListActions['add']>(async () => ({ ok: true })),
     update: vi.fn<ListActions['update']>(async () => ({ ok: true })),
     remove: vi.fn<ListActions['remove']>(async () => ({ ok: true })),
+    addOffList: vi.fn<ListActions['addOffList']>(async () => ({ ok: true })),
+    updateOffList: vi.fn<ListActions['updateOffList']>(async () => ({ ok: true })),
+    removeOffList: vi.fn<ListActions['removeOffList']>(async () => ({ ok: true })),
   }
 }
 
@@ -411,4 +430,143 @@ it('signed out, a Remove says nothing of its own while the server sends the page
   expect(screen.queryByText(copy.saveFailed)).toBeNull()
   within(row('Bird feeder')).getByRole('button', { name: copy.saving })
   expect(reload).not.toHaveBeenCalled()
+})
+
+// Off-list gifts (#21): a gift a buyer adds to someone's list, which everyone but that person sees.
+
+it('other: off-list gifts sit under their own heading after the list, struck through, reading Ben is buying this', () => {
+  show(grandmaOther, 'Maya')
+  const heading = screen.getByRole('heading', { name: copy.offListHeading('Grandma') })
+  expect(row('Jigsaw puzzle').compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(heading.compareDocumentPosition(row('Cooking class')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+  expect(screen.getByText('Cooking class').tagName).toBe('S')
+  expect(lines('Cooking class')).toEqual(['Cooking class', '$80', 'Saturday mornings', 'cooking.example.com ↗'])
+  within(row('Cooking class')).getByText(copy.isBuying('Ben'))
+  expect(row('Cooking class').className).toContain('bg-taken')
+  // Only Ben can change it, so Maya has no button on it at all.
+  expect(within(row('Cooking class')).queryByRole('button')).toBeNull()
+  screen.getByRole('button', { name: copy.addOffList('Grandma') })
+})
+
+it("the buyer's own off-list gift reads ✓ You're buying this, with Edit and Remove", () => {
+  show(grandmaAsBen, 'Ben')
+  expect(screen.getByText('Cooking class').tagName).not.toBe('S')
+  expect(row('Cooking class').className).toContain('bg-mine')
+  within(row('Cooking class')).getByText(copy.youreBuying)
+  within(row('Cooking class')).getByRole('button', { name: copy.edit })
+  within(row('Cooking class')).getByRole('button', { name: copy.remove })
+  expect(within(row('Cooking class')).queryByRole('button', { name: copy.undo })).toBeNull()
+})
+
+it('with no off-list gifts the section is only its button, which opens the form with its note', async () => {
+  const { actions } = show({ ...grandmaOther, offList: [] }, 'Maya')
+  expect(screen.queryByRole('heading', { name: copy.offListHeading('Grandma') })).toBeNull()
+  expect(screen.queryByLabelText(copy.fieldName)).toBeNull()
+
+  fireEvent.click(screen.getByRole('button', { name: copy.addOffList('Grandma') }))
+  screen.getByText(copy.offListFormNote('Grandma'))
+  fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Cooking class' } })
+  fireEvent.change(screen.getByLabelText(copy.fieldPrice), { target: { value: '80' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.addGift }))
+  expect(actions.addOffList).toHaveBeenCalledOnce()
+  const [recipientId, , form] = actions.addOffList.mock.calls[0]
+  expect(recipientId).toBe(grandma.id)
+  expect([form.get('name'), form.get('price')]).toEqual(['Cooking class', '80'])
+
+  // Once saved, the form closes and the button comes back.
+  await act(async () => {})
+  expect(screen.queryByLabelText(copy.fieldName)).toBeNull()
+  screen.getByRole('button', { name: copy.addOffList('Grandma') })
+})
+
+it('a refused off-list gift says why and keeps the form open with what was typed', async () => {
+  const actions = fakeActions()
+  actions.addOffList.mockResolvedValueOnce({ ok: false, error: copy.badLink })
+  show(grandmaOther, 'Maya', actions)
+  fireEvent.click(screen.getByRole('button', { name: copy.addOffList('Grandma') }))
+  fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Cooking class' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.addGift }))
+  await screen.findByText(copy.badLink)
+  expect((screen.getByLabelText(copy.fieldName) as HTMLInputElement).value).toBe('Cooking class')
+})
+
+it('Cancel closes the off-list form without adding anything', () => {
+  const { actions } = show(grandmaOther, 'Maya')
+  fireEvent.click(screen.getByRole('button', { name: copy.addOffList('Grandma') }))
+  fireEvent.click(screen.getByRole('button', { name: copy.cancel }))
+  expect(actions.addOffList).not.toHaveBeenCalled()
+  expect(screen.queryByLabelText(copy.fieldName)).toBeNull()
+})
+
+it("Edit opens the buyer's off-list gift, filled in; Save sends its id; the form closes once saved", async () => {
+  const { actions } = show(grandmaAsBen, 'Ben')
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.edit }))
+  expect(typed()).toEqual(['Cooking class', '80', 'Saturday mornings', 'https://cooking.example.com/class'])
+  fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Pasta class' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.save }))
+  expect(actions.updateOffList).toHaveBeenCalledOnce()
+  const [giftId, , form] = actions.updateOffList.mock.calls[0]
+  expect(giftId).toBe(cooking.id)
+  expect(form.get('name')).toBe('Pasta class')
+  expect(actions.update).not.toHaveBeenCalled()
+  await act(async () => {})
+  expect(screen.queryByRole('button', { name: copy.save })).toBeNull()
+})
+
+it('an edit to an off-list gift its buyer removed in another tab closes the form', async () => {
+  const actions = fakeActions()
+  actions.updateOffList.mockResolvedValueOnce({ ok: false, error: copy.gone, gone: true })
+  show(grandmaAsBen, 'Ben', actions)
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.edit }))
+  fireEvent.click(screen.getByRole('button', { name: copy.save }))
+  await act(async () => {})
+  expect(screen.queryByRole('button', { name: copy.save })).toBeNull()
+})
+
+it("Remove on the buyer's off-list gift asks first, then sends its id", async () => {
+  const { actions } = show(grandmaAsBen, 'Ben')
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.remove }))
+  within(row('Cooking class')).getByText(copy.removeConfirm)
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeNo }))
+  expect(actions.removeOffList).not.toHaveBeenCalled()
+
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.remove }))
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeYes }))
+  expect(actions.removeOffList).toHaveBeenCalledWith(cooking.id)
+  expect(actions.remove).not.toHaveBeenCalled()
+  await act(async () => {})
+})
+
+it('own: no off-list section, and no way to add one', () => {
+  show(mayaOwn)
+  expect(screen.queryByRole('button', { name: copy.addOffList('Maya') })).toBeNull()
+  expect(screen.queryByRole('heading', { name: copy.offListHeading('Maya') })).toBeNull()
+  expect(document.body.textContent).not.toMatch(/off-list/i)
+})
+
+it("kept: Leo's own add form comes first, then the off-list section", () => {
+  show({ ...leoKept, offList: [{ ...cooking, buyerName: 'Sam', mine: false }] })
+  const addToLeo = screen.getByRole('button', { name: copy.addToList('Leo') })
+  const heading = screen.getByRole('heading', { name: copy.offListHeading('Leo') })
+  expect(addToLeo.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  // Sam's off-list gift for Leo is his alone to change, though Maya keeps Leo's list.
+  expect(within(row('Cooking class')).queryByRole('button')).toBeNull()
+})
+
+it('on a page loaded before a deploy, the off-list form keeps what was typed, for when it opens again', async () => {
+  const reload = watchReload()
+  const actions = fakeActions()
+  actions.addOffList.mockRejectedValueOnce(staleAction())
+  show(grandmaOther, 'Maya', actions)
+  fireEvent.click(screen.getByRole('button', { name: copy.addOffList('Grandma') }))
+  fireEvent.change(screen.getByLabelText(copy.fieldName), { target: { value: 'Cooking class' } })
+  fireEvent.click(screen.getByRole('button', { name: copy.addGift }))
+  await act(async () => {})
+  expect(reload).toHaveBeenCalledOnce()
+
+  cleanup()
+  show(grandmaOther, 'Maya')
+  fireEvent.click(screen.getByRole('button', { name: copy.addOffList('Grandma') }))
+  expect(typed()).toEqual(['Cooking class', '', '', ''])
 })
