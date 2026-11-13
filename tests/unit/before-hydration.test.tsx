@@ -77,7 +77,7 @@ const pages: [string, ReactElement][] = [
     <ListView key="l" view={leoKept} viewerName="Maya" homeHref="/p/dev-maya" organizerName="Maya" actions={listActions} />,
   ],
   [
-    "Gifts I'm buying",
+    "Gifts I'm buying, with an off-list gift",
     <BuyingView
       key="b"
       groups={[
@@ -91,6 +91,7 @@ const pages: [string, ReactElement][] = [
       homeHref="/p/dev-maya"
       organizerName="Maya"
       unclaim={never}
+      removeOffList={never}
     />,
   ],
   [

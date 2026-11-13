@@ -124,6 +124,7 @@ it("Gifts I'm buying wraps a long item, its price, details and link, and who it'
       homeHref="/p/dev-maya"
       organizerName={person}
       unclaim={actions.unclaim}
+      removeOffList={actions.removeOffList}
     />,
   )
   expect(unwrapped()).toEqual([])

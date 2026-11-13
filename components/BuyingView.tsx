@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { PageNotices } from '@/components/PageNotices'
+import { RemoveItem } from '@/components/RemoveItem'
 import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
 import { shownPrice } from '@/lib/format'
 import { pageIsLeaving } from '@/lib/stale-page'
-import type { BuyingGroup } from '@/lib/types'
+import type { BuyingGroup, Result } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
 // Gifts I'm buying: everything the viewer tapped "I'll buy this" on, under a heading for each person
@@ -18,6 +19,10 @@ import { useHydrated } from '@/lib/use-hydrated'
 // An item its owner took off their list, or edited, after it was claimed stays here with a note
 // ("Removed from Leo's list", "Changed after you claimed it"), so the buyer isn't left holding a
 // gift nobody wants. Only the buyer ever sees the note.
+//
+// The viewer's off-list gifts (GLOSSARY.md) come after the items they claimed for that person,
+// tagged "Off-list gift". No one else can change one, so none has a note. Their Undo deletes the
+// gift, so it asks first ("Remove this?"), and the action's refresh then takes it off the page.
 //
 // An Undo the server confirmed takes the gift off this page straight away; the action's refresh()
 // then re-renders the page without it. When a refresh hands over new groups the page follows them,
@@ -33,12 +38,14 @@ export function BuyingView({
   homeHref,
   organizerName,
   unclaim,
+  removeOffList,
 }: {
   groups: BuyingGroup[]
   viewerName: string
   homeHref: string
   organizerName: string | null
   unclaim: (itemId: string) => Promise<void>
+  removeOffList: (giftId: string) => Promise<Result>
 }) {
   const [undone, setUndone] = useState<ReadonlySet<string>>(new Set())
   const [shownGroups, setShownGroups] = useState(groups)
@@ -49,7 +56,7 @@ export function BuyingView({
 
   const left = groups
     .map(group => ({ ...group, items: group.items.filter(item => !undone.has(item.id)) }))
-    .filter(group => group.items.length > 0)
+    .filter(group => group.items.length > 0 || group.offList.length > 0)
 
   const onUndone = (itemId: string) => setUndone(prev => new Set(prev).add(itemId))
 
@@ -67,7 +74,7 @@ export function BuyingView({
       {left.length === 0 ? (
         <p className="mt-5 text-neutral-600">{copy.buyingEmpty}</p>
       ) : (
-        left.map(({ recipient, items }) => (
+        left.map(({ recipient, items, offList }) => (
           <section key={recipient.id} aria-labelledby={`for-${recipient.id}`} className="mt-5">
             <h2 id={`for-${recipient.id}`} className="mb-2 text-lg font-bold text-buying-ink wrap-anywhere">
               {copy.forRecipient(recipient.name)}
@@ -92,6 +99,32 @@ export function BuyingView({
                     {item.url && <ShopLink url={item.url} />}
                   </div>
                   <Undo itemId={item.id} unclaim={unclaim} onUndone={onUndone} />
+                </li>
+              ))}
+              {offList.map(gift => (
+                <li
+                  key={gift.id}
+                  className="rounded-xl border border-item-line bg-white px-3.5 py-3 wrap-anywhere md:flex md:items-center md:justify-between md:gap-x-4"
+                >
+                  <div className="min-w-0">
+                    <p id={`gift-${gift.id}`} className="font-semibold text-neutral-900">
+                      {gift.name}
+                    </p>
+                    {gift.price && <p className="mt-0.5 text-sm text-neutral-600">{shownPrice(gift.price)}</p>}
+                    <p className="mt-1 w-fit rounded-md bg-buying px-2 py-0.5 text-sm font-semibold text-buying-ink">
+                      {copy.offListTag}
+                    </p>
+                    {gift.details && <p className="mt-0.5 text-sm text-neutral-600">{gift.details}</p>}
+                    {gift.url && <ShopLink url={gift.url} />}
+                  </div>
+                  <div className="-ml-1 flex flex-wrap items-center gap-x-2 md:ml-0 md:shrink-0 md:justify-end">
+                    <RemoveItem
+                      itemId={gift.id}
+                      remove={removeOffList}
+                      label={copy.undo}
+                      describedBy={`gift-${gift.id}`}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

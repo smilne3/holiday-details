@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, expect, it, vi } from 'vitest'
 import { BuyingView } from '@/components/BuyingView'
 import { copy } from '@/lib/copy'
-import type { BuyingGroup } from '@/lib/types'
+import type { BuyingGroup, Result } from '@/lib/types'
 import { redirectTo, staleAction, watchReload } from '@/tests/helpers/leaving'
 
 afterEach(() => {
@@ -29,12 +29,20 @@ const grandmas: BuyingGroup[] = [
 function show(groups: BuyingGroup[] = grandmas, viewerName = 'Grandma') {
   const undone = Promise.withResolvers<void>()
   const unclaim = vi.fn<(itemId: string) => Promise<void>>(() => undone.promise)
+  const removeOffList = vi.fn<(giftId: string) => Promise<Result>>(async () => ({ ok: true }))
   const homeHref = `/p/dev-${viewerName.toLowerCase()}`
   const view = (g: BuyingGroup[]) => (
-    <BuyingView groups={g} viewerName={viewerName} homeHref={homeHref} organizerName="Maya" unclaim={unclaim} />
+    <BuyingView
+      groups={g}
+      viewerName={viewerName}
+      homeHref={homeHref}
+      organizerName="Maya"
+      unclaim={unclaim}
+      removeOffList={removeOffList}
+    />
   )
   const rendered = render(view(groups))
-  return { unclaim, undone, rerender: (g: BuyingGroup[]) => rendered.rerender(view(g)) }
+  return { unclaim, undone, removeOffList, rerender: (g: BuyingGroup[]) => rendered.rerender(view(g)) }
 }
 
 // The section under a person's heading, and the card an item's name is on.
@@ -206,4 +214,47 @@ it('signed out, an Undo says nothing of its own while the server sends the page 
   expect(screen.queryByText(copy.saveFailed)).toBeNull()
   within(row('Yo-yo')).getByRole('button', { name: copy.saving })
   expect(reload).not.toHaveBeenCalled()
+})
+
+// Off-list gifts (#21): Ben's, for Grandma and for Leo. The ids, links and prices are made up.
+const grandma = { id: '00000000-0000-4000-8000-0000000000a7', name: 'Grandma' }
+const cooking = { id: '00000000-0000-4000-8000-0000000000e1', name: 'Cooking class', price: '80', details: 'Saturday mornings', url: null }
+const kite = { id: '00000000-0000-4000-8000-0000000000e2', name: 'Kite', price: null, details: null, url: 'https://kites.example.com/' }
+const bens: BuyingGroup[] = [
+  { recipient: grandma, items: [], offList: [cooking] },
+  { recipient: leo, items: [{ ...sweater, note: null }], offList: [kite] },
+]
+
+it('an off-list gift sits under its person after the claimed items, tagged Off-list gift', () => {
+  show(bens, 'Ben')
+  within(section('Grandma')).getByText('Cooking class')
+  expect(lines('Cooking class')).toEqual(['Cooking class', '$80', copy.offListTag, 'Saturday mornings'])
+  const leos = within(section('Leo')).getAllByRole('listitem').map(li => li.querySelector('p')?.textContent)
+  expect(leos).toEqual(['Sweater', 'Kite'])
+  within(row('Kite')).getByText(copy.offListTag)
+  expect(within(row('Sweater')).queryByText(copy.offListTag)).toBeNull()
+})
+
+it('Undo on an off-list gift asks first, since it deletes it; Yes, remove sends its id', async () => {
+  const { unclaim, removeOffList, rerender } = show(bens, 'Ben')
+  fireEvent.click(undoIn('Cooking class'))
+  within(row('Cooking class')).getByText(copy.removeConfirm)
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeNo }))
+  expect(removeOffList).not.toHaveBeenCalled()
+
+  fireEvent.click(undoIn('Cooking class'))
+  fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeYes }))
+  expect(removeOffList).toHaveBeenCalledWith(cooking.id)
+  expect(unclaim).not.toHaveBeenCalled()
+  await act(async () => {})
+
+  // The action's refresh hands over the gifts without it, and Grandma's heading goes with it.
+  rerender([bens[1]])
+  expect(screen.queryByText('Cooking class')).toBeNull()
+  expect(screen.queryByRole('region', { name: copy.forRecipient('Grandma') })).toBeNull()
+})
+
+it("an off-list gift's Undo is described by its name, as every Undo here is", () => {
+  show(bens, 'Ben')
+  expect(undoIn('Kite').getAttribute('aria-describedby')).toBe(screen.getByText('Kite').id)
 })
