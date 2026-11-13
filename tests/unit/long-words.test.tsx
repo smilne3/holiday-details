@@ -52,7 +52,7 @@ const actions = {
   remove: vi.fn(async () => ({ ok: true as const })),
   addOffList: vi.fn(async () => ({ ok: true as const })),
   updateOffList: vi.fn(async () => ({ ok: true as const })),
-  removeOffList: vi.fn(async () => ({ ok: true as const })),
+  deleteOffList: vi.fn(async () => ({ ok: true as const })),
 }
 
 it('the home page wraps a long name and a long household name', () => {
@@ -124,7 +124,7 @@ it("Gifts I'm buying wraps a long item, its price, details and link, and who it'
       homeHref="/p/dev-maya"
       organizerName={person}
       unclaim={actions.unclaim}
-      removeOffList={actions.removeOffList}
+      deleteOffList={actions.deleteOffList}
     />,
   )
   expect(unwrapped()).toEqual([])

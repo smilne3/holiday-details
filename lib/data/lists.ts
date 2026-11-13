@@ -82,12 +82,18 @@ export async function addOffListGift(db: Db, viewer: Viewer, recipientId: string
 
 // Saves an edit to an off-list gift. Only its buyer may edit it: not the person it's for, and not a
 // kid's keepers, whatever they may do with the kid's own items. One that's no longer there was
-// removed by its buyer, in another tab, so it's gone. A field missing from the form leaves the
+// deleted by its buyer, in another tab, so it's gone. A field missing from the form leaves the
 // stored value alone, as in updateItem.
+//
+// The person it's for hears gone too, just as for an id that names nothing, so even a forged
+// request can't tell them one exists.
 export async function updateOffListGift(db: Db, viewer: Viewer, giftId: string, input: ItemInput): Promise<Result> {
   if (!isUuid(giftId)) return refused(copy.notAllowed)
-  const [found] = await db.query<{ buyer_id: string }>('select buyer_id from off_list_gifts where id = $1', [giftId])
-  if (!found) return gone()
+  const [found] = await db.query<{ buyer_id: string; recipient_id: string }>(
+    'select buyer_id, recipient_id from off_list_gifts where id = $1',
+    [giftId],
+  )
+  if (!found || found.recipient_id === viewer.id) return gone()
   if (found.buyer_id !== viewer.id) return refused(copy.notAllowed)
   const gift = checkInput(input)
   if (!gift.ok) return gift
@@ -98,22 +104,27 @@ export async function updateOffListGift(db: Db, viewer: Viewer, giftId: string, 
       returning id`,
     [giftId, viewer.id, gift.name, gift.details, gift.url, gift.price ?? null, gift.price !== undefined],
   )
-  // No row: its buyer removed it since the check above.
+  // No row: its buyer deleted it since the check above.
   return rows.length > 0 ? { ok: true } : gone()
 }
 
-// Removes an off-list gift, from its list and from Gifts I'm buying: it has no claim to undo, so
-// taking it back deletes it. Only its buyer may. Removing one that's already gone (a second tap, or
-// another tab) is still done.
-export async function removeOffListGift(db: Db, viewer: Viewer, giftId: string): Promise<Result> {
+// Deletes an off-list gift, from its list and from Gifts I'm buying. Unlike a removed item it
+// leaves nothing behind: it has no claim to keep, so taking it back is deleting it (GLOSSARY.md).
+// On screen that's Remove on the list and Undo in Gifts I'm buying. Only its buyer may. Deleting one
+// that's already gone (a second tap, or another tab) is still done, and so is one for the viewer, so
+// they hear what an id that names nothing gets.
+export async function deleteOffListGift(db: Db, viewer: Viewer, giftId: string): Promise<Result> {
   if (!isUuid(giftId)) return refused(copy.notAllowed)
   const deleted = await db.query('delete from off_list_gifts where id = $1 and buyer_id = $2 returning id', [
     giftId,
     viewer.id,
   ])
   if (deleted.length > 0) return { ok: true }
-  const [someoneElses] = await db.query('select 1 from off_list_gifts where id = $1', [giftId])
-  return someoneElses ? refused(copy.notAllowed) : { ok: true }
+  const [someoneElses] = await db.query<{ recipient_id: string }>(
+    'select recipient_id from off_list_gifts where id = $1',
+    [giftId],
+  )
+  return someoneElses && someoneElses.recipient_id !== viewer.id ? refused(copy.notAllowed) : { ok: true }
 }
 
 // Saves an edit. The permission check is against the item's owner as stored, never one the

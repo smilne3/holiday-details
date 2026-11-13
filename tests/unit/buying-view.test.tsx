@@ -29,7 +29,7 @@ const grandmas: BuyingGroup[] = [
 function show(groups: BuyingGroup[] = grandmas, viewerName = 'Grandma') {
   const undone = Promise.withResolvers<void>()
   const unclaim = vi.fn<(itemId: string) => Promise<void>>(() => undone.promise)
-  const removeOffList = vi.fn<(giftId: string) => Promise<Result>>(async () => ({ ok: true }))
+  const deleteOffList = vi.fn<(giftId: string) => Promise<Result>>(async () => ({ ok: true }))
   const homeHref = `/p/dev-${viewerName.toLowerCase()}`
   const view = (g: BuyingGroup[]) => (
     <BuyingView
@@ -38,11 +38,11 @@ function show(groups: BuyingGroup[] = grandmas, viewerName = 'Grandma') {
       homeHref={homeHref}
       organizerName="Maya"
       unclaim={unclaim}
-      removeOffList={removeOffList}
+      deleteOffList={deleteOffList}
     />
   )
   const rendered = render(view(groups))
-  return { unclaim, undone, removeOffList, rerender: (g: BuyingGroup[]) => rendered.rerender(view(g)) }
+  return { unclaim, undone, deleteOffList, rerender: (g: BuyingGroup[]) => rendered.rerender(view(g)) }
 }
 
 // The section under a person's heading, and the card an item's name is on.
@@ -236,15 +236,15 @@ it('an off-list gift sits under its person after the claimed items, tagged Off-l
 })
 
 it('Undo on an off-list gift asks first, since it deletes it; Yes, remove sends its id', async () => {
-  const { unclaim, removeOffList, rerender } = show(bens, 'Ben')
+  const { unclaim, deleteOffList, rerender } = show(bens, 'Ben')
   fireEvent.click(undoIn('Cooking class'))
   within(row('Cooking class')).getByText(copy.removeConfirm)
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeNo }))
-  expect(removeOffList).not.toHaveBeenCalled()
+  expect(deleteOffList).not.toHaveBeenCalled()
 
   fireEvent.click(undoIn('Cooking class'))
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeYes }))
-  expect(removeOffList).toHaveBeenCalledWith(cooking.id)
+  expect(deleteOffList).toHaveBeenCalledWith(cooking.id)
   expect(unclaim).not.toHaveBeenCalled()
   await act(async () => {})
 

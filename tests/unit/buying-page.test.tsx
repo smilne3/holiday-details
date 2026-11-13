@@ -3,7 +3,7 @@ import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import BuyingPage from '@/app/buying/page'
-import { removeOffListAction, unclaimAction } from '@/app/list/actions'
+import { deleteOffListAction, unclaimAction } from '@/app/list/actions'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
@@ -73,11 +73,11 @@ it('someone who is buying nothing sees the empty message', async () => {
   expect(markup).toContain(html(copy.signedInAs('Ben')))
 })
 
-it("hands Undo the list's own unclaimAction, and an off-list gift's Undo its removeOffListAction", async () => {
+it("hands Undo the list's own unclaimAction, and an off-list gift's Undo its deleteOffListAction", async () => {
   cookie.token = 'dev-grandma'
-  const element = (await BuyingPage()) as ReactElement<{ unclaim: unknown; removeOffList: unknown }>
+  const element = (await BuyingPage()) as ReactElement<{ unclaim: unknown; deleteOffList: unknown }>
   expect(element.props.unclaim).toBe(unclaimAction)
-  expect(element.props.removeOffList).toBe(removeOffListAction)
+  expect(element.props.deleteOffList).toBe(deleteOffListAction)
 })
 
 it("Ben's off-list gift for Grandma is in his Gifts I'm buying, tagged, and in no one else's", async () => {

@@ -8,7 +8,7 @@ import {
   addOffListAction,
   claimAction,
   removeItemAction,
-  removeOffListAction,
+  deleteOffListAction,
   unclaimAction,
   updateItemAction,
   updateOffListAction,
@@ -110,7 +110,7 @@ it('hands the list exactly the eight list actions, each under its own name', asy
     remove: removeItemAction,
     addOffList: addOffListAction,
     updateOffList: updateOffListAction,
-    removeOffList: removeOffListAction,
+    deleteOffList: deleteOffListAction,
   }
   const actions = element.props.actions as unknown as Record<string, unknown>
   expect(Object.keys(actions).sort()).toEqual(Object.keys(expected).sort())

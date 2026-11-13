@@ -37,11 +37,15 @@ A buyer's "I'll buy this" on an item. An item has at most one.
 _Avoid_: reservation, pledge
 
 **Off-list gift**:
-A gift a buyer adds to someone's list that isn't one of their wishes. Everyone but that person sees it, and who's buying it. It always has its buyer: taking it back deletes it.
+A gift a buyer adds to someone's list that isn't one of their wishes. Everyone but that person sees it, and who's buying it. It always has its buyer: taking it back deletes it, leaving nothing behind, unlike a removed item.
 _Avoid_: surprise (that's the promise below), extra, gift idea
 
 **Buyer**:
-The person who claimed an item, or added an off-list gift. Only the buyer can change or remove an off-list gift.
+The person who claimed an item, or added an off-list gift. Only the buyer can change or delete an off-list gift.
+
+**Recipient**:
+The person a gift is for, seen from its buyer's side: the list owner of a claimed item, or the person an off-list gift was added for.
+_Avoid_: giftee
 
 **Removed**:
 Said of an item its list owner or a keeper took off the list. A claim on it stays, so its buyer finds out.

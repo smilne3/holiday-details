@@ -41,7 +41,7 @@ const listActions = {
   remove: never,
   addOffList: never,
   updateOffList: never,
-  removeOffList: never,
+  deleteOffList: never,
 }
 const organizerActions = {
   renameHousehold: never,
@@ -91,7 +91,7 @@ const pages: [string, ReactElement][] = [
       homeHref="/p/dev-maya"
       organizerName="Maya"
       unclaim={never}
-      removeOffList={never}
+      deleteOffList={never}
     />,
   ],
   [

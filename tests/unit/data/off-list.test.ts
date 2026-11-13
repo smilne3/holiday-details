@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, expect, it } from 'vitest'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import { getBuying } from '@/lib/data/claims'
-import { addOffListGift, getListView, removeOffListGift, updateOffListGift } from '@/lib/data/lists'
+import { addOffListGift, getListView, deleteOffListGift, updateOffListGift } from '@/lib/data/lists'
 import { deletePerson } from '@/lib/data/organizer'
 import { getHome } from '@/lib/data/people'
 import type { Db } from '@/lib/db/types'
@@ -185,11 +185,11 @@ it('Ben edits his off-list gift: every field, checked as an item is', async () =
   expect(await stored(id)).toMatchObject({ name: 'Pasta class', price: '90', details: null, url: null })
 })
 
-it("only the buyer edits an off-list gift: not its recipient, a spouse, or the kid's keepers", async () => {
+// Grandma, whom it's for, is refused too, in other words: see the test after the deletes.
+it("only the buyer edits an off-list gift: not a spouse of the person it's for, or a kid's keepers", async () => {
   const forGrandma = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
   const forLeo = await offListRow(db, f.leo.id, f.grandma.id, 'Drum kit')
   for (const [viewer, id] of [
-    [f.grandma, forGrandma],
     [f.grandpa, forGrandma],
     [f.maya, forGrandma],
     [f.maya, forLeo],
@@ -202,35 +202,34 @@ it("only the buyer edits an off-list gift: not its recipient, a spouse, or the k
   expect(await updateOffListGift(db, f.ben, 'not-a-uuid', input('Changed'))).toEqual(notAllowed)
 })
 
-it('an edit to an off-list gift its buyer removed in another tab is gone', async () => {
+it('an edit to an off-list gift its buyer deleted in another tab is gone', async () => {
   const id = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
   await db.query('delete from off_list_gifts where id = $1', [id])
   expect(await updateOffListGift(db, f.ben, id, input('Pasta class'))).toEqual(gone)
   expect(await stored(id)).toBeNull()
 })
 
-it('Ben removes his off-list gift, and it is gone for everyone; removing it again is still done', async () => {
+it('Ben deletes his off-list gift, and it is gone for everyone; deleting it again is still done', async () => {
   const id = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
-  expect(await removeOffListGift(db, f.ben, id)).toEqual(ok)
+  expect(await deleteOffListGift(db, f.ben, id)).toEqual(ok)
   expect(await stored(id)).toBeNull()
   expect((await view(f.maya, f.grandma.id)).offList).toEqual([])
-  expect(await removeOffListGift(db, f.ben, id)).toEqual(ok)
+  expect(await deleteOffListGift(db, f.ben, id)).toEqual(ok)
 })
 
-it("only the buyer removes an off-list gift: not its recipient, a spouse, or the kid's keepers", async () => {
+it("only the buyer deletes an off-list gift: not a spouse of the person it's for, or a kid's keepers", async () => {
   const forGrandma = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
   const forLeo = await offListRow(db, f.leo.id, f.grandma.id, 'Drum kit')
   for (const [viewer, id] of [
-    [f.grandma, forGrandma],
     [f.grandpa, forGrandma],
     [f.maya, forLeo],
     [f.ben, forLeo],
   ] as const) {
-    expect(await removeOffListGift(db, viewer, id)).toEqual(notAllowed)
+    expect(await deleteOffListGift(db, viewer, id)).toEqual(notAllowed)
   }
   expect(await stored(forGrandma)).not.toBeNull()
   expect(await stored(forLeo)).not.toBeNull()
-  expect(await removeOffListGift(db, f.ben, 'not-a-uuid')).toEqual(notAllowed)
+  expect(await deleteOffListGift(db, f.ben, 'not-a-uuid')).toEqual(notAllowed)
 })
 
 it("Ben's home counts his off-list gifts with his claims; Grandma's home is exactly the same", async () => {
@@ -289,4 +288,18 @@ it("the organizer can't remove someone who is buying an off-list gift, or someon
   await db.query('delete from off_list_gifts')
   expect(await deletePerson(db, f.maya, f.ivy.id)).toEqual(ok)
   expect(await deletePerson(db, f.maya, f.grandpa.id)).toEqual(ok)
+})
+
+// The surprise holds even for a forged request. If Grandma somehow had the id of an off-list gift
+// for her, editing or deleting it answers exactly as an id that names nothing does, and changes
+// nothing.
+it('the person an off-list gift is for hears the same about its id as about one that names nothing', async () => {
+  const real = await offListRow(db, f.grandma.id, f.ben.id, 'Cooking class')
+  const made_up = '00000000-0000-4000-8000-000000009999'
+  expect(await updateOffListGift(db, f.grandma, real, input('Changed'))).toEqual(
+    await updateOffListGift(db, f.grandma, made_up, input('Changed')),
+  )
+  expect(await deleteOffListGift(db, f.grandma, real)).toEqual(await deleteOffListGift(db, f.grandma, made_up))
+  expect(await stored(real)).toMatchObject({ name: 'Cooking class' })
+  expect(await updateOffListGift(db, f.grandma, real, input('Changed'))).toEqual(gone)
 })

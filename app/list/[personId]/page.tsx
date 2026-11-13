@@ -4,7 +4,7 @@ import {
   addOffListAction,
   claimAction,
   removeItemAction,
-  removeOffListAction,
+  deleteOffListAction,
   unclaimAction,
   updateItemAction,
   updateOffListAction,
@@ -47,7 +47,7 @@ export default async function ListPage({ params }: { params: Promise<{ personId:
         remove: removeItemAction,
         addOffList: addOffListAction,
         updateOffList: updateOffListAction,
-        removeOffList: removeOffListAction,
+        deleteOffList: deleteOffListAction,
       }}
     />
   )

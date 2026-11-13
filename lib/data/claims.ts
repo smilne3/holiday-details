@@ -52,7 +52,8 @@ export async function getBuying(db: Db, viewer: Viewer): Promise<BuyingGroup[]> 
        join people p on p.id = i.owner_id
       where c.buyer_id = $1
      union all
-     select p.id, p.name, g.id, g.name, g.price, g.details, g.url, false, false, true, g.created_at
+     select p.id, p.name, g.id, g.name, g.price, g.details, g.url,
+            false as removed, false as changed, true as off_list, g.created_at
        from off_list_gifts g
        join people p on p.id = g.recipient_id
       where g.buyer_id = $1

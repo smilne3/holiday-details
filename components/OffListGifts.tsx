@@ -1,11 +1,9 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { cardClass, cardTone, EditTools, formValues, ItemLines } from '@/components/ItemCard'
 import { ItemForm } from '@/components/ItemForm'
-import { RemoveItem } from '@/components/RemoveItem'
-import { ShopLink } from '@/components/ShopLink'
 import { copy } from '@/lib/copy'
-import { shownPrice } from '@/lib/format'
 import type { OffListGift, Result } from '@/lib/types'
 import { useHydrated } from '@/lib/use-hydrated'
 
@@ -20,8 +18,8 @@ import { useHydrated } from '@/lib/use-hydrated'
 //     form starts closed, so someone else's list never opens with a form that looks like it adds to
 //     their wishes. With no off-list gifts yet, the button is all the section shows.
 //
-// Each gift's card is laid out as an item's is in ListView, so the two read alike. Typed text is
-// wrap-anywhere. Every button is disabled until the page's JavaScript runs (useHydrated).
+// Each gift is a card from components/ItemCard.tsx, as an item is in ListView, so the two read alike.
+// Every button is disabled until the page's JavaScript runs (useHydrated).
 //
 // The add form passes a draftKey of its own, so what was typed survives a reload after a deploy
 // (lib/stale-page.ts), and is put back when the form is next opened.
@@ -30,20 +28,20 @@ export function OffListGifts({
   gifts,
   add,
   update,
-  remove,
+  deleteGift,
 }: {
   recipient: { id: string; name: string }
   gifts: OffListGift[]
   add: (recipientId: string, prev: Result | null, form: FormData) => Promise<Result>
   update: (giftId: string, prev: Result | null, form: FormData) => Promise<Result>
-  remove: (giftId: string) => Promise<Result>
+  deleteGift: (giftId: string) => Promise<Result>
 }) {
   const hydrated = useHydrated()
   const headingId = useId()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
 
-  // An edit to a gift its buyer removed in another tab answers gone. The action's refresh takes the
+  // An edit to a gift its buyer deleted in another tab answers gone. The action's refresh takes the
   // gift off the page, so the form just closes.
   function save(giftId: string) {
     return async (prev: Result | null, form: FormData): Promise<Result> => {
@@ -62,61 +60,33 @@ export function OffListGifts({
           </h2>
           <ul className="mt-3 space-y-2.5">
             {gifts.map(gift => {
-              const muted = gift.mine ? 'text-neutral-600' : 'text-neutral-500'
+              // The viewer's own, or someone else's: an off-list gift is never open.
+              const whose = gift.mine
+                ? { tone: cardTone.mine, line: copy.youreBuying, ink: 'text-mine-ink' }
+                : { tone: cardTone.taken, line: copy.isBuying(gift.buyerName), ink: 'text-neutral-600' }
               return (
-                <li
-                  key={gift.id}
-                  className={`rounded-xl border px-3.5 py-3 wrap-anywhere md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4 ${
-                    gift.mine ? 'border-mine-line bg-mine' : 'border-item-line bg-taken'
-                  }`}
-                >
+                <li key={gift.id} className={`${cardClass} ${whose.tone}`}>
                   <div className="min-w-0 md:col-start-1 md:row-start-1">
                     {editing === gift.id ? (
                       <ItemForm
                         action={save(gift.id)}
                         submitLabel={copy.save}
-                        initial={{
-                          name: gift.name,
-                          price: gift.price ?? '',
-                          details: gift.details ?? '',
-                          link: gift.url ?? '',
-                        }}
+                        initial={formValues(gift)}
                         onSaved={() => setEditing(null)}
                         onCancel={() => setEditing(null)}
                       />
                     ) : (
-                      <>
-                        <p className={`font-semibold ${gift.mine ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                          {gift.mine ? gift.name : <s>{gift.name}</s>}
-                        </p>
-                        {gift.price && <p className={`mt-0.5 text-sm ${muted}`}>{shownPrice(gift.price)}</p>}
-                        {gift.details && <p className={`mt-0.5 text-sm ${muted}`}>{gift.details}</p>}
-                        {gift.url && <ShopLink url={gift.url} />}
-                      </>
+                      <ItemLines item={gift} taken={!gift.mine} />
                     )}
                   </div>
 
                   {/* Capped from md: up, as a claim's line is, so a long name can't take the gift's room. */}
-                  <p
-                    className={`mt-2 text-sm font-semibold md:col-start-2 md:row-span-2 md:row-start-1 md:mt-0 md:max-w-60 ${
-                      gift.mine ? 'text-mine-ink' : 'text-neutral-600'
-                    }`}
-                  >
-                    {gift.mine ? copy.youreBuying : copy.isBuying(gift.buyerName)}
-                  </p>
+                  <div className="md:col-start-2 md:row-span-2 md:row-start-1">
+                    <p className={`mt-2 text-sm font-semibold md:mt-0 md:max-w-60 ${whose.ink}`}>{whose.line}</p>
+                  </div>
 
                   {gift.mine && editing !== gift.id && (
-                    <div className="-ml-1 flex flex-wrap items-center gap-x-3 md:col-start-1 md:row-start-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditing(gift.id)}
-                        disabled={!hydrated}
-                        className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline disabled:opacity-70"
-                      >
-                        {copy.edit}
-                      </button>
-                      <RemoveItem itemId={gift.id} remove={remove} />
-                    </div>
+                    <EditTools id={gift.id} onEdit={() => setEditing(gift.id)} remove={deleteGift} />
                   )}
                 </li>
               )

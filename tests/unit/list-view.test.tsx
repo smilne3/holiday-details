@@ -89,7 +89,7 @@ function fakeActions() {
     remove: vi.fn<ListActions['remove']>(async () => ({ ok: true })),
     addOffList: vi.fn<ListActions['addOffList']>(async () => ({ ok: true })),
     updateOffList: vi.fn<ListActions['updateOffList']>(async () => ({ ok: true })),
-    removeOffList: vi.fn<ListActions['removeOffList']>(async () => ({ ok: true })),
+    deleteOffList: vi.fn<ListActions['deleteOffList']>(async () => ({ ok: true })),
   }
 }
 
@@ -514,7 +514,7 @@ it("Edit opens the buyer's off-list gift, filled in; Save sends its id; the form
   expect(screen.queryByRole('button', { name: copy.save })).toBeNull()
 })
 
-it('an edit to an off-list gift its buyer removed in another tab closes the form', async () => {
+it('an edit to an off-list gift its buyer deleted in another tab closes the form', async () => {
   const actions = fakeActions()
   actions.updateOffList.mockResolvedValueOnce({ ok: false, error: copy.gone, gone: true })
   show(grandmaAsBen, 'Ben', actions)
@@ -529,11 +529,11 @@ it("Remove on the buyer's off-list gift asks first, then sends its id", async ()
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.remove }))
   within(row('Cooking class')).getByText(copy.removeConfirm)
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeNo }))
-  expect(actions.removeOffList).not.toHaveBeenCalled()
+  expect(actions.deleteOffList).not.toHaveBeenCalled()
 
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.remove }))
   fireEvent.click(within(row('Cooking class')).getByRole('button', { name: copy.removeYes }))
-  expect(actions.removeOffList).toHaveBeenCalledWith(cooking.id)
+  expect(actions.deleteOffList).toHaveBeenCalledWith(cooking.id)
   expect(actions.remove).not.toHaveBeenCalled()
   await act(async () => {})
 })

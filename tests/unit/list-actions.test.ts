@@ -5,7 +5,7 @@ import {
   addOffListAction,
   claimAction,
   removeItemAction,
-  removeOffListAction,
+  deleteOffListAction,
   unclaimAction,
   updateItemAction,
   updateOffListAction,
@@ -260,7 +260,7 @@ it('the off-list actions send a signed-out request to /, and write and refresh n
     cookie.token = token
     expect(await redirectedTo(addOffListAction(f.grandma.id, null, form({ name: 'Atlas', details: '', link: '' })))).toBe('/')
     expect(await redirectedTo(updateOffListAction(cooking, null, form({ name: 'Pasta', details: '', link: '' })))).toBe('/')
-    expect(await redirectedTo(removeOffListAction(cooking))).toBe('/')
+    expect(await redirectedTo(deleteOffListAction(cooking))).toBe('/')
   }
   expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
   expect(refresh).not.toHaveBeenCalled()
@@ -283,25 +283,34 @@ it("addOffListAction: Ben adds one for Grandma as himself, and the page refreshe
   expect(refresh).toHaveBeenCalledOnce()
 })
 
-it('updateOffListAction and removeOffListAction are for the buyer alone', async () => {
+it('updateOffListAction and deleteOffListAction are for the buyer alone', async () => {
   const cooking = await offListRow(t.db, f.grandma.id, f.ben.id, 'Cooking class')
-  for (const token of ['dev-grandma', 'dev-maya']) {
+  for (const token of ['dev-grandpa', 'dev-maya']) {
     as(token)
     expect(await updateOffListAction(cooking, null, form({ name: 'Pasta', details: '', link: '' }))).toEqual({
       ok: false,
       error: copy.notAllowed,
     })
-    expect(await removeOffListAction(cooking)).toEqual({ ok: false, error: copy.notAllowed })
+    expect(await deleteOffListAction(cooking)).toEqual({ ok: false, error: copy.notAllowed })
   }
-  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
   expect(refresh).not.toHaveBeenCalled()
+  // Grandma, whom it's for, hears what an id that names nothing gets, and changes nothing.
+  as('dev-grandma')
+  expect(await updateOffListAction(cooking, null, form({ name: 'Pasta', details: '', link: '' }))).toEqual({
+    ok: false,
+    error: copy.gone,
+    gone: true,
+  })
+  expect(await deleteOffListAction(cooking)).toEqual({ ok: true })
+  expect(await offListNames(f.grandma.id)).toEqual([['Cooking class', f.ben.id]])
+  refresh.mockClear()
 
   as('dev-ben')
   expect(await updateOffListAction(cooking, null, form({ name: 'Pasta class', details: '', link: '' }))).toEqual({
     ok: true,
   })
   expect(await offListNames(f.grandma.id)).toEqual([['Pasta class', f.ben.id]])
-  expect(await removeOffListAction(cooking)).toEqual({ ok: true })
+  expect(await deleteOffListAction(cooking)).toEqual({ ok: true })
   expect(await offListNames(f.grandma.id)).toEqual([])
   expect(refresh).toHaveBeenCalledTimes(2)
 

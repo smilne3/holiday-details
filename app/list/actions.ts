@@ -7,7 +7,7 @@ import {
   addItem,
   addOffListGift,
   removeItem,
-  removeOffListGift,
+  deleteOffListGift,
   updateItem,
   updateOffListGift,
 } from '@/lib/data/lists'
@@ -66,7 +66,7 @@ export async function removeItemAction(itemId: string): Promise<Result> {
 }
 
 // Off-list gifts (GLOSSARY.md). The viewer is the buyer: they add one to someone else's list, and
-// only they edit or remove it. Removing it is also the Undo in Gifts I'm buying.
+// only they edit or delete it. Deleting it is Remove on the list, and Undo in Gifts I'm buying.
 export async function addOffListAction(recipientId: string, _prev: Result | null, form: FormData): Promise<Result> {
   const viewer = await getViewer()
   if (!viewer) redirect('/')
@@ -79,10 +79,10 @@ export async function updateOffListAction(giftId: string, _prev: Result | null, 
   return refreshed(await updateOffListGift(await getDb(), viewer, giftId, itemInput(form)))
 }
 
-export async function removeOffListAction(giftId: string): Promise<Result> {
+export async function deleteOffListAction(giftId: string): Promise<Result> {
   const viewer = await getViewer()
   if (!viewer) redirect('/')
-  return refreshed(await removeOffListGift(await getDb(), viewer, giftId))
+  return refreshed(await deleteOffListGift(await getDb(), viewer, giftId))
 }
 
 function refreshed(result: Result): Result {
