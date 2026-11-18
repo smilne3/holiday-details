@@ -3,15 +3,13 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { ItemClaim } from '@/components/ItemClaim'
+import { cardClass, cardTone, EditTools, formValues, ItemLines } from '@/components/ItemCard'
 import { ItemForm } from '@/components/ItemForm'
+import { OffListGifts } from '@/components/OffListGifts'
 import { PageNotices } from '@/components/PageNotices'
-import { RemoveItem } from '@/components/RemoveItem'
-import { ShopLink } from '@/components/ShopLink'
 import { SignedInAs } from '@/components/SignedInAs'
 import { copy } from '@/lib/copy'
-import { shownPrice } from '@/lib/format'
 import type { ClaimResult, ListItem, ListViewData, OwnListItem, Result } from '@/lib/types'
-import { useHydrated } from '@/lib/use-hydrated'
 
 // The Server Actions in app/list/actions.ts. Tests pass fakes.
 export interface ListActions {
@@ -20,20 +18,23 @@ export interface ListActions {
   add: (ownerId: string, prev: Result | null, form: FormData) => Promise<Result>
   update: (itemId: string, prev: Result | null, form: FormData) => Promise<Result>
   remove: (itemId: string) => Promise<Result>
+  addOffList: (recipientId: string, prev: Result | null, form: FormData) => Promise<Result>
+  updateOffList: (giftId: string, prev: Result | null, form: FormData) => Promise<Result>
+  deleteOffList: (giftId: string) => Promise<Result>
 }
 
 // One wish list, as the owner chose from the mockups (the spec's Screens section):
 //   - someone else's list: "I'll buy this" on each open item, and anyone else's claim greyed and
 //     struck through, reading "Priya is buying this"
-//   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind
+//   - your own list: the surprise note, Edit and Remove, and the add form; no claim of any kind,
+//     and no off-list gift
 //   - your kid's list: both of the above
+//   - every list but your own ends with its off-list gifts (OffListGifts), after the add form on a
+//     kid's list
 //
-// Each item reads top to bottom: its name, then its price on a line of its own, then its details and
-// its shop's link. A price is shown as typed, except that a bare number gets a $ (lib/format.ts).
-//
-// On a phone each item stacks, with the button full width under it. From md: up each item is one
-// row, with the claim control on the right. Typed text is wrap-anywhere, so a link pasted into
-// "What is it?", with no spaces to break at, wraps instead of pushing the page sideways.
+// Each item is a card from components/ItemCard.tsx, which off-list gifts share: its text top to
+// bottom, then on a phone the button full width under it, and from md: up the claim control on the
+// right.
 //
 // Until the page's JavaScript runs, every button is disabled, Edit included, and PageNotices waits
 // at the foot of the page to say what to do if they never come to life.
@@ -57,7 +58,6 @@ export function ListView({
   organizerName: string | null
   actions: ListActions
 }) {
-  const hydrated = useHydrated()
   const [editing, setEditing] = useState<string | null>(null)
   const [gone, setGone] = useState<{ id: string; at: number } | null>(null)
   const own = view.mode === 'own'
@@ -131,43 +131,20 @@ export function ListView({
             const claim = own ? null : (item.claim ?? null)
             const mine = claim?.mine === true
             const taken = claim !== null && !claim.mine
-            const tone = mine ? 'border-mine-line bg-mine' : taken ? 'border-item-line bg-taken' : 'border-item-line bg-white'
+            const tone = cardTone[mine ? 'mine' : taken ? 'taken' : 'open']
             return (
-              <li
-                key={item.id}
-                className={`rounded-xl border px-3.5 py-3 wrap-anywhere md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4 ${tone}`}
-              >
+              <li key={item.id} className={`${cardClass} ${tone}`}>
                 <div className="min-w-0 md:col-start-1 md:row-start-1">
                   {editing === item.id ? (
                     <ItemForm
                       action={update(item.id)}
                       submitLabel={copy.save}
-                      initial={{
-                        name: item.name,
-                        price: item.price ?? '',
-                        details: item.details ?? '',
-                        link: item.url ?? '',
-                      }}
+                      initial={formValues(item)}
                       onSaved={() => setEditing(null)}
                       onCancel={() => setEditing(null)}
                     />
                   ) : (
-                    <>
-                      <p className={`font-semibold ${taken ? 'text-neutral-500' : 'text-neutral-900'}`}>
-                        {taken ? <s>{item.name}</s> : item.name}
-                      </p>
-                      {item.price && (
-                        <p className={`mt-0.5 text-sm ${taken ? 'text-neutral-500' : 'text-neutral-600'}`}>
-                          {shownPrice(item.price)}
-                        </p>
-                      )}
-                      {item.details && (
-                        <p className={`mt-0.5 text-sm ${taken ? 'text-neutral-500' : 'text-neutral-600'}`}>
-                          {item.details}
-                        </p>
-                      )}
-                      {item.url && <ShopLink url={item.url} />}
-                    </>
+                    <ItemLines item={item} taken={taken} />
                   )}
                 </div>
 
@@ -176,17 +153,7 @@ export function ListView({
                 )}
 
                 {view.canEdit && editing !== item.id && (
-                  <div className="-ml-1 flex flex-wrap items-center gap-x-3 md:col-start-1 md:row-start-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(item.id)}
-                      disabled={!hydrated}
-                      className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-link underline disabled:opacity-70"
-                    >
-                      {copy.edit}
-                    </button>
-                    <RemoveItem itemId={item.id} remove={actions.remove} />
-                  </div>
+                  <EditTools id={item.id} onEdit={() => setEditing(item.id)} remove={actions.remove} />
                 )}
               </li>
             )
@@ -202,6 +169,15 @@ export function ListView({
             draftKey={`add-item:${view.owner.id}`}
           />
         </section>
+      )}
+      {view.mode !== 'own' && (
+        <OffListGifts
+          recipient={view.owner}
+          gifts={view.offList}
+          add={actions.addOffList}
+          update={actions.updateOffList}
+          deleteGift={actions.deleteOffList}
+        />
       )}
       <PageNotices organizerName={organizerName} />
     </main>

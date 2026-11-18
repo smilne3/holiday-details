@@ -11,7 +11,21 @@ import { useHydrated } from '@/lib/use-hydrated'
 // page's refresh takes the item, and this with it, off the list; until then it reads Saving…. It
 // reads Saving… too while the page is on its way out (lib/stale-page.ts), and says nothing else.
 // Like every button that writes, it's disabled until the page's JavaScript runs (useHydrated).
-export function RemoveItem({ itemId, remove }: { itemId: string; remove: (itemId: string) => Promise<Result> }) {
+//
+// Gifts I'm buying uses it as the Undo on an off-list gift, which deletes the gift, so it asks too:
+// label is the button's word before it asks, and describedBy names the gift it's for, as each Undo
+// there does.
+export function RemoveItem({
+  itemId,
+  remove,
+  label = copy.remove,
+  describedBy,
+}: {
+  itemId: string
+  remove: (itemId: string) => Promise<Result>
+  label?: string
+  describedBy?: string
+}) {
   const [step, setStep] = useState<'idle' | 'asking' | 'removing'>('idle')
   const [error, setError] = useState<string | null>(null)
   const busy = useRef(false)
@@ -42,8 +56,14 @@ export function RemoveItem({ itemId, remove }: { itemId: string; remove: (itemId
   return (
     <>
       {step === 'idle' ? (
-        <button type="button" onClick={() => setStep('asking')} disabled={!hydrated} className={link}>
-          {copy.remove}
+        <button
+          type="button"
+          onClick={() => setStep('asking')}
+          disabled={!hydrated}
+          aria-describedby={describedBy}
+          className={link}
+        >
+          {label}
         </button>
       ) : (
         <span className="inline-flex flex-wrap items-center gap-x-2">

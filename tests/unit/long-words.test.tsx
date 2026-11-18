@@ -50,6 +50,9 @@ const actions = {
   add: vi.fn(async () => ({ ok: true as const })),
   update: vi.fn(async () => ({ ok: true as const })),
   remove: vi.fn(async () => ({ ok: true as const })),
+  addOffList: vi.fn(async () => ({ ok: true as const })),
+  updateOffList: vi.fn(async () => ({ ok: true as const })),
+  deleteOffList: vi.fn(async () => ({ ok: true as const })),
 }
 
 it('the home page wraps a long name and a long household name', () => {
@@ -78,12 +81,20 @@ it("someone else's list wraps a long item, its price, details and link, the owne
       { id: '00000000-0000-4000-8000-0000000000c2', name: item, price, details, url, claim: { buyerName: person, mine: true } },
       { id: '00000000-0000-4000-8000-0000000000c3', name: item, price, details, url, claim: null },
     ],
+    // Off-list gifts, the viewer's own and someone else's, wrap as items do.
+    offList: [
+      { id: '00000000-0000-4000-8000-0000000000e1', name: item, price, details, url, buyerName: person, mine: false },
+      { id: '00000000-0000-4000-8000-0000000000e2', name: item, price, details, url, buyerName: person, mine: true },
+    ],
   }
   render(<ListView view={view} viewerName={person} homeHref="/p/dev-maya" organizerName={person} actions={actions} />)
   expect(unwrapped()).toEqual([])
   // From md: up the claim sits in a column as wide as its text. Capped, as the ✓ line is, so a long
-  // buyer's name can't take the item's room. (The browser check at 1280px measures it.)
-  expect(screen.getByText(copy.isBuying(person)).className).toContain('md:max-w-60')
+  // buyer's name can't take the item's room, on an item and an off-list gift alike. (The browser
+  // check at 1280px measures it.)
+  const buying = screen.getAllByText(copy.isBuying(person))
+  expect(buying).toHaveLength(2)
+  for (const line of buying) expect(line.className).toContain('md:max-w-60')
 })
 
 it('My wish list wraps a long item, its price and its details', () => {
@@ -102,11 +113,18 @@ it('My wish list wraps a long item, its price and its details', () => {
 it("Gifts I'm buying wraps a long item, its price, details and link, and who it's for", () => {
   render(
     <BuyingView
-      groups={[{ recipient: { id: ids.owner, name: person }, items: [{ id: ids.item, name: item, price, details, url, note: 'removed' }] }]}
+      groups={[
+        {
+          recipient: { id: ids.owner, name: person },
+          items: [{ id: ids.item, name: item, price, details, url, note: 'removed' }],
+          offList: [{ id: '00000000-0000-4000-8000-0000000000e1', name: item, price, details, url }],
+        },
+      ]}
       viewerName={person}
       homeHref="/p/dev-maya"
       organizerName={person}
       unclaim={actions.unclaim}
+      deleteOffList={actions.deleteOffList}
     />,
   )
   expect(unwrapped()).toEqual([])

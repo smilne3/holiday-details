@@ -239,6 +239,7 @@ it('getBuying groups my claims by recipient name, with prices, links and details
     {
       recipient: { id: f.ivy.id, name: 'Ivy' },
       items: [{ id: paints, name: 'Paint set', price: null, details: 'Watercolour', url: null, note: null }],
+      offList: [],
     },
     {
       recipient: { id: f.leo.id, name: 'Leo' },
@@ -253,14 +254,17 @@ it('getBuying groups my claims by recipient name, with prices, links and details
         },
         { id: yoyo, name: 'Yo-yo', price: null, details: null, url: null, note: null },
       ],
+      offList: [],
     },
     {
       recipient: { id: f.maya.id, name: 'Maya' },
       items: [{ id: feeder, name: 'Bird feeder', price: null, details: null, url: null, note: null }],
+      offList: [],
     },
     {
       recipient: { id: f.ollie.id, name: 'Ollie' },
       items: [{ id: boots, name: 'Rain boots', price: null, details: null, url: 'https://example.com/boots', note: null }],
+      offList: [],
     },
   ])
   expect(await getBuying(db, f.grandpa)).toStrictEqual([])

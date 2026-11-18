@@ -3,7 +3,8 @@
 One extended family's holiday wish lists, kept in one place, with each adult signing in from a
 personal link. Anyone can tap "I'll buy this" on someone else's list, and everyone except that list's
 owner sees it the next time they open or refresh the list, so nothing is bought twice and no surprise
-is spoiled.
+is spoiled. A buyer can also add an off-list gift to someone's list, one that isn't among their
+wishes, and everyone but that person sees it.
 
 ## Run it locally
 

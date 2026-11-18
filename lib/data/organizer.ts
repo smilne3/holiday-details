@@ -113,7 +113,8 @@ export async function updatePerson(
 }
 
 // Removes someone set up by mistake. Anyone with anything on their list, even things since taken
-// off it, or who is buying anything, stays: their items and claims are other people's plans.
+// off it, or who is buying anything, stays: their items and claims are other people's plans. So
+// does anyone an off-list gift is for, or who is buying one.
 //
 // The organizer can't remove herself. The organizer page would then turn her away, and there'd be
 // no one left to set up the family.
@@ -122,7 +123,8 @@ export async function deletePerson(db: Db, viewer: Viewer, id: string): Promise<
   // Compared in SQL, where a uuid in capitals is the same person.
   const [person] = await db.query<{ busy: boolean }>(
     `select exists (select 1 from items where owner_id = p.id)
-            or exists (select 1 from claims where buyer_id = p.id) as busy
+            or exists (select 1 from claims where buyer_id = p.id)
+            or exists (select 1 from off_list_gifts where recipient_id = p.id or buyer_id = p.id) as busy
        from people p
       where p.id = $1 and p.id <> $2`,
     [id, viewer.id],
@@ -132,7 +134,8 @@ export async function deletePerson(db: Db, viewer: Viewer, id: string): Promise<
   try {
     await db.query('delete from people where id = $1', [id])
   } catch (e) {
-    // An item or a claim that arrived since the check above: the foreign keys keep the person.
+    // An item, a claim or an off-list gift that arrived since the check above: the foreign keys keep
+    // the person.
     if (isForeignKeyViolation(e)) return refused(copy.cantDelete)
     throw e
   }

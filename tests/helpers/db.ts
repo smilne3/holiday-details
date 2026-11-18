@@ -15,7 +15,7 @@ export async function testDb(): Promise<{
     db: pg,
     family: await seedDevFamily(pg),
     async reset() {
-      await pg.query('truncate claims, items, people, households restart identity cascade')
+      await pg.query('truncate off_list_gifts, claims, items, people, households restart identity cascade')
       return seedDevFamily(pg)
     },
     close: () => pg.close(),
@@ -38,4 +38,20 @@ export async function itemRow(
 
 export async function claimRow(db: Db, itemId: string, buyerId: string): Promise<void> {
   await db.query('insert into claims (item_id, buyer_id) values ($1, $2)', [itemId, buyerId])
+}
+
+// An off-list gift from buyerId to recipientId (db/migrations/003_off_list_gifts.sql).
+export async function offListRow(
+  db: Db,
+  recipientId: string,
+  buyerId: string,
+  name: string,
+  extra: { details?: string; url?: string; price?: string } = {},
+): Promise<string> {
+  const [row] = await db.query<{ id: string }>(
+    `insert into off_list_gifts (recipient_id, buyer_id, name, details, url, price)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [recipientId, buyerId, name, extra.details ?? null, extra.url ?? null, extra.price ?? null],
+  )
+  return row.id
 }

@@ -3,12 +3,12 @@ import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import BuyingPage from '@/app/buying/page'
-import { unclaimAction } from '@/app/list/actions'
+import { deleteOffListAction, unclaimAction } from '@/app/list/actions'
 import type { Family } from '@/db/dev-family'
 import { copy } from '@/lib/copy'
 import type { Db } from '@/lib/db/types'
 import type { BuyingGroup } from '@/lib/types'
-import { claimRow, itemRow, testDb } from '@/tests/helpers/db'
+import { claimRow, itemRow, offListRow, testDb } from '@/tests/helpers/db'
 
 // The page gets the made-up family in PGlite, and the cookie holds whichever token the test sets.
 const dbRef = vi.hoisted(() => ({ db: undefined as Db | undefined }))
@@ -73,8 +73,23 @@ it('someone who is buying nothing sees the empty message', async () => {
   expect(markup).toContain(html(copy.signedInAs('Ben')))
 })
 
-it("hands Undo the list's own unclaimAction", async () => {
+it("hands Undo the list's own unclaimAction, and an off-list gift's Undo its deleteOffListAction", async () => {
   cookie.token = 'dev-grandma'
-  const element = (await BuyingPage()) as ReactElement<{ unclaim: unknown }>
+  const element = (await BuyingPage()) as ReactElement<{ unclaim: unknown; deleteOffList: unknown }>
   expect(element.props.unclaim).toBe(unclaimAction)
+  expect(element.props.deleteOffList).toBe(deleteOffListAction)
+})
+
+it("Ben's off-list gift for Grandma is in his Gifts I'm buying, tagged, and in no one else's", async () => {
+  await offListRow(t.db, f.grandma.id, f.ben.id, 'Cooking class', { price: '80' })
+  cookie.token = 'dev-ben'
+  const markup = renderToStaticMarkup(await BuyingPage())
+  expect(markup).toContain(html(copy.forRecipient('Grandma')))
+  expect(markup).toContain('Cooking class')
+  expect(markup).toContain(html(copy.offListTag))
+
+  for (const token of ['dev-grandma', 'dev-maya']) {
+    cookie.token = token
+    expect(renderToStaticMarkup(await BuyingPage())).not.toContain('Cooking class')
+  }
 })

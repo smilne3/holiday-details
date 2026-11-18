@@ -32,11 +32,14 @@ export async function findViewerByToken(db: Db, token: string): Promise<Viewer |
 // kids, each by name; a household with no one else in it isn't shown.
 export async function getHome(db: Db, viewer: Viewer): Promise<HomeData> {
   const [[counts], rows] = await Promise.all([
-    // Live items on the viewer's own list, claimed or not, so the count can't give a claim away.
-    // The viewer's claims include ones on items since removed: those stay in Gifts I'm buying.
+    // Live items on the viewer's own list, claimed or not, so the count can't give a claim away. It
+    // never reads off-list gifts, so one for the viewer can't move it either.
+    // The viewer's gifts are their claims, including ones on items since removed (those stay in
+    // Gifts I'm buying), and the off-list gifts they're buying.
     db.query<{ my_item_count: number; buying_count: number }>(
       `select (select count(*)::int from items where owner_id = $1 and removed_at is null) as my_item_count,
-              (select count(*)::int from claims where buyer_id = $1) as buying_count`,
+              (select count(*)::int from claims where buyer_id = $1)
+                + (select count(*)::int from off_list_gifts where buyer_id = $1) as buying_count`,
       [viewer.id],
     ),
     db.query<{ household_id: string; household_name: string; id: string; name: string; kind: PersonKind }>(

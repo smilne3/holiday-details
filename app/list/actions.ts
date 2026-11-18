@@ -3,7 +3,14 @@
 import { refresh } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { claimItem, unclaimItem } from '@/lib/data/claims'
-import { addItem, removeItem, updateItem } from '@/lib/data/lists'
+import {
+  addItem,
+  addOffListGift,
+  removeItem,
+  deleteOffListGift,
+  updateItem,
+  updateOffListGift,
+} from '@/lib/data/lists'
 import { getDb } from '@/lib/db'
 import { getViewer } from '@/lib/session'
 import type { ClaimResult, ItemInput, Result } from '@/lib/types'
@@ -56,6 +63,26 @@ export async function removeItemAction(itemId: string): Promise<Result> {
   const viewer = await getViewer()
   if (!viewer) redirect('/')
   return refreshed(await removeItem(await getDb(), viewer, itemId))
+}
+
+// Off-list gifts (GLOSSARY.md). The viewer is the buyer: they add one to someone else's list, and
+// only they edit or delete it. Deleting it is Remove on the list, and Undo in Gifts I'm buying.
+export async function addOffListAction(recipientId: string, _prev: Result | null, form: FormData): Promise<Result> {
+  const viewer = await getViewer()
+  if (!viewer) redirect('/')
+  return refreshed(await addOffListGift(await getDb(), viewer, recipientId, itemInput(form)))
+}
+
+export async function updateOffListAction(giftId: string, _prev: Result | null, form: FormData): Promise<Result> {
+  const viewer = await getViewer()
+  if (!viewer) redirect('/')
+  return refreshed(await updateOffListGift(await getDb(), viewer, giftId, itemInput(form)))
+}
+
+export async function deleteOffListAction(giftId: string): Promise<Result> {
+  const viewer = await getViewer()
+  if (!viewer) redirect('/')
+  return refreshed(await deleteOffListGift(await getDb(), viewer, giftId))
 }
 
 function refreshed(result: Result): Result {
