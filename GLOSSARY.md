@@ -1,6 +1,6 @@
 # Family Wish Lists
 
-One family's holiday wish lists in one place: what each person would like, and who is buying what, kept from the person it's for.
+One family's wish lists in one place, kept all year: what each person would like, and who is buying what, kept from the person it's for.
 
 ## Language
 
@@ -38,7 +38,11 @@ _Avoid_: reservation, pledge
 
 **Off-list gift**:
 A gift a buyer adds to someone's list that isn't one of their wishes. Everyone but that person sees it, and who's buying it. It always has its buyer: taking it back deletes it, leaving nothing behind, unlike a removed item.
-_Avoid_: surprise (that's the promise below), extra, gift idea
+_Avoid_: surprise (that's the promise below), extra, gift idea (that's a household's private plan, below)
+
+**Gift idea**:
+A gift an adult is thinking of buying for someone. Only the adults in their household see it, never the person it's for. It isn't a promise to buy, so nobody else is told; adding it to that person's list makes it an off-list gift.
+_Avoid_: idea list, plan, off-list gift (that one the family can see)
 
 **Buyer**:
 The person who claimed an item, or added an off-list gift. Only the buyer can change or delete an off-list gift.
@@ -52,5 +56,5 @@ Said of an item its list owner or a keeper took off the list. A claim on it stay
 _Avoid_: deleted, off-list
 
 **The surprise**:
-The app's promise that a list owner never learns what's been claimed, or added off-list, on their own list. Keepers do see both on their kids' lists.
+The app's promise that a list owner never learns what's been claimed, or added off-list, on their own list, or what anyone has as a gift idea for them. Keepers do see claims and off-list gifts on their kids' lists.
 _Avoid_: the secret
