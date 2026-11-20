@@ -52,7 +52,7 @@ The person a gift is for, seen from its buyer's side: the list owner of a claime
 _Avoid_: giftee
 
 **Removed**:
-Said of an item its list owner or a keeper took off the list. A claim on it stays, so its buyer finds out.
+Said of an item its list owner or a keeper took off the list. A claim on it stays until it's cleared, so its buyer finds out.
 _Avoid_: deleted, off-list
 
 **The surprise**:
