@@ -11,7 +11,7 @@ People who live together, adults and kids. Its adults keep its kids' lists.
 _Avoid_: family (that's everyone in the app)
 
 **Organizer**:
-The adult who sets up the households and people, and sends each adult their personal link.
+The adult who sets up the households and people, with each person's birthday, and sends each adult their personal link.
 _Avoid_: admin
 
 **Personal link**:
@@ -58,3 +58,13 @@ _Avoid_: deleted, off-list
 **The surprise**:
 The app's promise that a list owner never learns what's been claimed, or added off-list, on their own list, or what anyone has as a gift idea for them. Keepers do see claims and off-list gifts on their kids' lists.
 _Avoid_: the secret
+
+### Occasions
+
+**Occasion**:
+A day the family gives gifts: Christmas, or someone's birthday.
+_Avoid_: holiday, event, season
+
+**Given**:
+Said of a claim once its buyer says the gift was handed over, which ends the claim. The app asks only after the recipient's occasion has passed, so nothing changes before it.
+_Avoid_: done, delivered, received
