@@ -7,7 +7,7 @@ One family's wish lists in one place, kept all year: what each person would like
 ### People
 
 **Household**:
-People who live together, adults and kids. Its adults keep its kids' lists.
+People who live together, adults and kids. Its adults keep its kids' lists and share its gift ideas.
 _Avoid_: family (that's everyone in the app)
 
 **Organizer**:
@@ -41,7 +41,7 @@ A gift a buyer adds to someone's list that isn't one of their wishes. Everyone b
 _Avoid_: surprise (that's the promise below), extra, gift idea (that's a household's private plan, below)
 
 **Gift idea**:
-A gift an adult is thinking of buying for someone. Only the adults in their household see it, never the person it's for. It isn't a promise to buy, so nobody else is told; adding it to that person's list makes it an off-list gift.
+A gift a household is thinking of buying for someone, in the family or not. Only its adults see it, never the person it's for, and it isn't a promise to buy; adding it to a family member's list makes it an off-list gift.
 _Avoid_: idea list, plan, off-list gift (that one the family can see)
 
 **Buyer**:
