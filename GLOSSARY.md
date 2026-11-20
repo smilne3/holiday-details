@@ -66,5 +66,5 @@ A day the family gives gifts: Christmas, or someone's birthday.
 _Avoid_: holiday, event, season
 
 **Given**:
-Said of a claim once its buyer says the gift was handed over, which ends the claim. The app asks only after the recipient's occasion has passed, so nothing changes before it.
+Said of a claim once its buyer says the gift was handed over. That ends the claim and takes the item off the list for everyone. The app asks only after the recipient's occasion has passed, so nothing changes before it. Items nobody claimed stay on the list.
 _Avoid_: done, delivered, received
