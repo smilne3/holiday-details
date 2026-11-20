@@ -65,6 +65,6 @@ _Avoid_: the secret
 A day the family gives gifts: Christmas, or someone's birthday.
 _Avoid_: holiday, event, season
 
-**Given**:
-Said of a claim once its buyer says the gift was handed over. That ends the claim and takes the item off the list for everyone. The app asks only after the recipient's occasion has passed, so nothing changes before it. Items nobody claimed stay on the list.
-_Avoid_: done, delivered, received
+**Cleared**:
+Said of a claimed item or off-list gift once the next occasion of the person it's for is over: it comes off the list for everyone, while items nobody claimed stay. A birthday is over the next day; Christmas, and any birthday in December or January, at the end of January.
+_Avoid_: given, ended, expired, done
